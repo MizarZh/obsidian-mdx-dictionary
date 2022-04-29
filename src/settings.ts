@@ -30,8 +30,8 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
     containerEl.empty()
 
     new Setting(containerEl)
-      .setName('Dictionary Path')
-      .setDesc('Dictionary Path')
+      .setName('Dictionary or Folder Path')
+      .setDesc('path to your dictionary or folder containing them')
       .addText((text) => {
         text
           .setPlaceholder('path/to/your/dictionary')
@@ -56,8 +56,8 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
       })
 
     new Setting(containerEl)
-      .setName('File Save Path')
-      .setDesc('with respect to current vault')
+      .setName('Save Word As MD')
+      .setDesc('save word as md format rather than html')
       .addToggle((cb) => {
         cb.setValue(this.plugin.settings.isSaveAsText).onChange(async (value) => {
           this.plugin.settings.isSaveAsText = value

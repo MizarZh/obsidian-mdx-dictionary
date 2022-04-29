@@ -22,7 +22,7 @@ export class MdxDictionaryView extends ItemView {
     const container = this.containerEl.children[1]
     container.empty()
     const root = container.createEl('div', { cls: 'mdx-dict-sidebar' })
-    root.innerHTML = lookup(this.settings.dictPath, this.settings.word, true)
+    root.innerHTML = lookup(this.settings.dictPath, this.settings.word, false)
   }
   async onClose() {}
 }
