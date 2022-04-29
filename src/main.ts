@@ -72,7 +72,10 @@ export default class MdxDictionary extends Plugin {
 
   async saveWordToFile() {
     const { vault } = this.app
-    vault.create(`${this.settings.fileSavePath}/${this.settings.word}.md`, lookup(this.settings.dictPath, this.settings.word))
+    vault.create(
+      `${this.settings.fileSavePath}/${this.settings.word}.md`,
+      lookup(this.settings.dictPath, this.settings.word, this.settings.isSaveAsText)
+    )
   }
 }
 

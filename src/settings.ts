@@ -5,12 +5,16 @@ import MdxDictionary from './main'
 export interface MdxDictionarySettings {
   dictPath: string
   fileSavePath: string
+
+  isSaveAsText: boolean
+
   word: string
 }
 
 export const MDX_DICTIONARY_DEFAULT_SETTINGS: Partial<MdxDictionarySettings> = {
   dictPath: 'C:/',
   word: 'test',
+  isSaveAsText: true,
 }
 
 export class MdxDictionarySettingTab extends PluginSettingTab {
@@ -49,6 +53,16 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
             this.plugin.settings.fileSavePath = value
             await this.plugin.saveSettings()
           })
+      })
+
+    new Setting(containerEl)
+      .setName('File Save Path')
+      .setDesc('with respect to current vault')
+      .addToggle((cb) => {
+        cb.setValue(this.plugin.settings.isSaveAsText).onChange(async (value) => {
+          this.plugin.settings.isSaveAsText = value
+          await this.plugin.saveSettings()
+        })
       })
   }
 }

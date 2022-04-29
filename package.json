@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-mdx-dictionary",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "obsidian-mdx-dictionary",
 	"main": "main.js",
 	"scripts": {
@@ -12,10 +12,14 @@
 	"author": "",
 	"license": "MIT",
 	"dependencies": {
-		"js-mdict": "^4.0.20"
+		"html-to-text": "^8.2.0",
+		"js-mdict": "^4.0.20",
+		"turndown": "^7.1.1"
 	},
 	"devDependencies": {
+		"@types/html-to-text": "^8.1.0",
 		"@types/node": "^16.11.6",
+		"@types/turndown": "^5.0.1",
 		"@typescript-eslint/eslint-plugin": "^5.2.0",
 		"@typescript-eslint/parser": "^5.2.0",
 		"builtin-modules": "^3.2.0",
