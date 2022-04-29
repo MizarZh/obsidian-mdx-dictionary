@@ -1,12 +1,13 @@
-import { App, Editor, Modal, Plugin, Setting } from 'obsidian'
+import { App, Editor, Modal, Plugin, Setting, Vault } from 'obsidian'
 
 import { MdxDictionaryView, VIEW_TYPE_MDX_DICT } from './view'
-
 import {
   MdxDictionarySettings,
   MDX_DICTIONARY_DEFAULT_SETTINGS,
   MdxDictionarySettingTab,
 } from './settings'
+
+import { lookup } from './utils'
 
 export default class MdxDictionary extends Plugin {
   settings: MdxDictionarySettings
@@ -35,6 +36,18 @@ export default class MdxDictionary extends Plugin {
       //   this.activateView()
       // },
     })
+
+    this.addCommand({
+      id: 'save-word-to-file',
+      name: 'Save Word To File',
+      editorCallback: async (editor: Editor) => {
+        const selection = editor.getSelection()
+        if (selection !== '') {
+          this.settings.word = selection
+          this.saveWordToFile()
+        }
+      },
+    })
   }
 
   onunload() {
@@ -55,6 +68,11 @@ export default class MdxDictionary extends Plugin {
       .getRightLeaf(false)
       .setViewState({ type: VIEW_TYPE_MDX_DICT, active: true })
     this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(VIEW_TYPE_MDX_DICT)[0])
+  }
+
+  async saveWordToFile() {
+    const { vault } = this.app
+    vault.create(`${this.settings.fileSavePath}/${this.settings.word}.md`, lookup(this.settings.dictPath, this.settings.word))
   }
 }
 
