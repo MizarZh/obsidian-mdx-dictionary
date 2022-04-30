@@ -1,11 +1,14 @@
-import { App, Editor, Modal, Plugin, Setting, TFile, TFolder, Vault } from 'obsidian'
+import { Editor, Plugin, TFile, TFolder, Notice } from 'obsidian'
 
 import { MdxDictionaryView, VIEW_TYPE_MDX_DICT } from './view'
+
 import {
   MdxDictionarySettings,
   MDX_DICTIONARY_DEFAULT_SETTINGS,
   MdxDictionarySettingTab,
 } from './settings'
+
+import { SearchWordModal } from './modal'
 
 import { lookup } from './utils'
 
@@ -20,26 +23,29 @@ export default class MdxDictionary extends Plugin {
 
     this.addCommand({
       id: 'search-word',
-      name: 'Search Word',
+      name: 'search word',
+      callback: async () => {
+        new SearchWordModal(this.app, this.settings).open()
+      },
+    })
+
+    this.addCommand({
+      id: 'search-selected-word',
+      name: 'Search Selected Word',
       editorCallback: async (editor: Editor) => {
         const selection = editor.getSelection()
         if (selection !== '') {
           this.settings.word = selection
           await this.activateView()
+        } else {
+          new Notice('Nothing is selected!')
         }
-        // else {
-        //   new ExampleModal(this.app, this.settings).open()
-        // }
       },
-      // callback: () => {
-      //   this.settings.word = 'fast'
-      //   this.activateView()
-      // },
     })
 
     this.addCommand({
-      id: 'save-word-to-file',
-      name: 'Save Word To File',
+      id: 'save-selected-word-to-file',
+      name: 'Save Selected Word To File',
       editorCallback: async (editor: Editor) => {
         const selection = editor.getSelection()
         if (selection !== '') {
@@ -90,40 +96,5 @@ export default class MdxDictionary extends Plugin {
         }
       }
     }
-  }
-}
-
-export class ExampleModal extends Modal {
-  result: string
-  settings: MdxDictionarySettings
-  onSubmit(result: string): void {
-    this.settings.word = result
-  }
-
-  constructor(app: App, settings: MdxDictionarySettings) {
-    super(app)
-    this.settings = settings
-  }
-  onOpen() {
-    const { contentEl } = this
-    contentEl.createEl('h1', { text: 'Enter the word you want to search' })
-    new Setting(contentEl).setName('Word').addText((text) =>
-      text.onChange((value) => {
-        this.result = value
-      })
-    )
-    new Setting(contentEl).addButton((btn) =>
-      btn
-        .setButtonText('Submit')
-        .setCta()
-        .onClick(() => {
-          this.close()
-          this.onSubmit(this.result)
-        })
-    )
-  }
-  onClose() {
-    const { contentEl } = this
-    contentEl.empty()
   }
 }
