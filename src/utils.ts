@@ -12,14 +12,14 @@ import TurndownService from 'turndown'
 
 const turndownService = new TurndownService()
 
-export function lookup(path: string, word: string, isText: boolean): string {
+export function lookup(path: string, word: string, isText: boolean, showWordNonexistenceNotice: boolean): string {
   let result = ''
 
   const dictPaths: Array<string> = []
   try {
     statSync(path)
   } catch (e) {
-    new Notice('Invalid path')
+    new Notice('Invalid dictionary path')
     return ''
   }
   const stat = statSync(path)
@@ -34,7 +34,7 @@ export function lookup(path: string, word: string, isText: boolean): string {
       new Notice('No mdx/mdd files in the chosen directory')
       return ''
     }
-  // if path points to a file
+    // if path points to a file
   } else {
     if (extname(path).match(/\.(mdx|mdd)/)) dictPaths.push(path)
     else {
@@ -42,21 +42,29 @@ export function lookup(path: string, word: string, isText: boolean): string {
       return ''
     }
   }
-
   // console.log(files)
   for (const path of dictPaths) {
     const dict = new Mdict(path)
     let definition = dict.lookup(word).definition
     const dictBasename = basename(path)
+
     if (definition == null) {
-      new Notice(`Word in dictionary ${dictBasename} does not exist`)
+      notice(
+        `Word in dictionary ${dictBasename} does not exist`,
+        showWordNonexistenceNotice
+      )
       definition = 'Word does not exist'
     }
     result += `<h2>${dictBasename}</h2> <br>` + definition + '<br> <hr>'
   }
   // console.log(result)
-  if (isText === true) {
+  if (isText) {
     result = turndownService.turndown(result)
   }
   return result
+}
+
+// flag = true means notice will show
+export function notice(text: string, flag: boolean) {
+  if (flag) new Notice(text)
 }

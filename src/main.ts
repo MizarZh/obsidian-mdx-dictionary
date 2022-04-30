@@ -12,6 +12,8 @@ import { SearchWordModal } from './modal'
 
 import { lookup } from './utils'
 
+import { statSync } from 'fs'
+
 export default class MdxDictionary extends Plugin {
   settings: MdxDictionarySettings
 
@@ -81,8 +83,17 @@ export default class MdxDictionary extends Plugin {
     const definition = lookup(
       this.settings.dictPath,
       this.settings.word,
-      this.settings.isSaveAsText
+      this.settings.isSaveAsText,
+      this.settings.showWordNonexistenceNotice
     )
+
+    try {
+      statSync(this.settings.fileSavePath)
+    } catch (e) {
+      new Notice('Invalid file save path')
+      return
+    }
+
     try {
       await vault.create(`${this.settings.fileSavePath}/${this.settings.word}.md`, definition)
     } catch (e) {

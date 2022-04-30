@@ -8,13 +8,17 @@ export interface MdxDictionarySettings {
 
   isSaveAsText: boolean
 
+  showWordNonexistenceNotice: boolean
+
   word: string
 }
 
 export const MDX_DICTIONARY_DEFAULT_SETTINGS: Partial<MdxDictionarySettings> = {
   dictPath: 'C:/',
   word: 'test',
+
   isSaveAsText: true,
+  showWordNonexistenceNotice: false
 }
 
 export class MdxDictionarySettingTab extends PluginSettingTab {
@@ -56,11 +60,21 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
       })
 
     new Setting(containerEl)
-      .setName('Save Word As MD')
-      .setDesc('save word as md format rather than html')
+      .setName('Save Word As markdown')
+      .setDesc('save word as markdown format rather than html')
       .addToggle((cb) => {
         cb.setValue(this.plugin.settings.isSaveAsText).onChange(async (value) => {
           this.plugin.settings.isSaveAsText = value
+          await this.plugin.saveSettings()
+        })
+      })
+
+    new Setting(containerEl)
+      .setName('Show Word Notices')
+      .setDesc('')
+      .addToggle((cb) => {
+        cb.setValue(this.plugin.settings.showWordNonexistenceNotice).onChange(async (value) => {
+          this.plugin.settings.showWordNonexistenceNotice = value
           await this.plugin.saveSettings()
         })
       })
