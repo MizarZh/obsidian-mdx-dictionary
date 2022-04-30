@@ -23,16 +23,16 @@ export function lookup(path: string, word: string, isText: boolean): string {
   } else {
     if (extname(path).match(/\.(mdx|mdd)/)) files.push(path)
   }
-  console.log(files)
+  // console.log(files)
   for (const path of files) {
     const dict = new Mdict(path)
-    const text = dict.lookup(word).definition
+    const definition = dict.lookup(word).definition
     const dictBasename = basename(path)
-    result += `<h2>${dictBasename}</h2> <br>` + text + '<br> <hr>'
-    if (isText === true) {
-      result = turndownService.turndown(result)
-    }
-    // console.log(result)
+    result += `<h2>${dictBasename}</h2> <br>` + definition + '<br> <hr>'
+  }
+  // console.log(result)
+  if (isText === true) {
+    result = turndownService.turndown(result)
   }
   return result
 }

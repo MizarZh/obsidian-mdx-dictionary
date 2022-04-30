@@ -31,7 +31,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Dictionary or Folder Path')
-      .setDesc('path to your dictionary or folder containing them')
+      .setDesc('absolute path to your dictionary or folder containing them')
       .addText((text) => {
         text
           .setPlaceholder('path/to/your/dictionary')

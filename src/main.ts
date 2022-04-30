@@ -1,4 +1,4 @@
-import { App, Editor, Modal, Plugin, Setting, Vault } from 'obsidian'
+import { App, Editor, Modal, Plugin, Setting, TFile, TFolder, Vault } from 'obsidian'
 
 import { MdxDictionaryView, VIEW_TYPE_MDX_DICT } from './view'
 import {
@@ -25,7 +25,7 @@ export default class MdxDictionary extends Plugin {
         const selection = editor.getSelection()
         if (selection !== '') {
           this.settings.word = selection
-          this.activateView()
+          await this.activateView()
         }
         // else {
         //   new ExampleModal(this.app, this.settings).open()
@@ -44,7 +44,7 @@ export default class MdxDictionary extends Plugin {
         const selection = editor.getSelection()
         if (selection !== '') {
           this.settings.word = selection
-          this.saveWordToFile()
+          await this.saveWordToFile()
         }
       },
     })
@@ -72,10 +72,24 @@ export default class MdxDictionary extends Plugin {
 
   async saveWordToFile() {
     const { vault } = this.app
-    vault.create(
-      `${this.settings.fileSavePath}/${this.settings.word}.md`,
-      lookup(this.settings.dictPath, this.settings.word, this.settings.isSaveAsText)
+    const definition = lookup(
+      this.settings.dictPath,
+      this.settings.word,
+      this.settings.isSaveAsText
     )
+    try {
+      vault.create(`${this.settings.fileSavePath}/${this.settings.word}.md`, definition)
+    } catch (e) {
+      const fileSaveFolder = vault.getAbstractFileByPath(this.settings.fileSavePath)
+      if (fileSaveFolder instanceof TFolder) {
+        for (const wordFile of fileSaveFolder.children) {
+          if (wordFile instanceof TFile && wordFile.basename === this.settings.word) {
+            vault.modify(wordFile, definition)
+            break
+          }
+        }
+      }
+    }
   }
 }
 
