@@ -23,7 +23,7 @@ export default class MdxDictionary extends Plugin {
 
     this.addCommand({
       id: 'search-word',
-      name: 'search word',
+      name: 'Search word',
       callback: async () => {
         new SearchWordModal(this.app, this.settings).open()
       },
@@ -84,13 +84,13 @@ export default class MdxDictionary extends Plugin {
       this.settings.isSaveAsText
     )
     try {
-      vault.create(`${this.settings.fileSavePath}/${this.settings.word}.md`, definition)
+      await vault.create(`${this.settings.fileSavePath}/${this.settings.word}.md`, definition)
     } catch (e) {
       const fileSaveFolder = vault.getAbstractFileByPath(this.settings.fileSavePath)
       if (fileSaveFolder instanceof TFolder) {
         for (const wordFile of fileSaveFolder.children) {
           if (wordFile instanceof TFile && wordFile.basename === this.settings.word) {
-            vault.modify(wordFile, definition)
+            await vault.modify(wordFile, definition)
             break
           }
         }
