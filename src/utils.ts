@@ -18,7 +18,7 @@ export function lookup(
   isText: boolean,
   showWordNonexistenceNotice: boolean
 ): string {
-  let result = ''
+  let result = `<h1>${word}</h1><br><hr><br>`
 
   const dictPaths: Array<string> = []
   try {

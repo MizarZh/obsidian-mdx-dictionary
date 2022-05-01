@@ -27,22 +27,14 @@ export default class MdxDictionary extends Plugin {
 
     this.addCommand({
       id: 'search-word',
-      name: 'Search word',
-      callback: async () => {
-        new SearchWordModal(this.app, this.settings).open()
-      },
-    })
-
-    this.addCommand({
-      id: 'search-selected-word',
-      name: 'Search Selected Word',
+      name: 'Search Word',
       editorCallback: async (editor: Editor) => {
         const selection = editor.getSelection()
         if (selection !== '') {
           this.settings.word = selection
           await this.activateView()
         } else {
-          new Notice('Nothing is selected!')
+          new SearchWordModal(this.app, this.settings).open()
         }
       },
     })
