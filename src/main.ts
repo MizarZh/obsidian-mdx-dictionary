@@ -1,4 +1,4 @@
-import { Editor, Plugin, TFile, TFolder, Notice } from 'obsidian'
+import { Editor, Plugin, TFile, TFolder, Notice, Vault } from 'obsidian'
 
 import { MdxDictionaryView, VIEW_TYPE_MDX_DICT } from './view'
 
@@ -8,11 +8,13 @@ import {
   MdxDictionarySettingTab,
 } from './settings'
 
-import { SearchWordModal } from './modal'
+import { SearchWordModal, SaveFileModal } from './modal'
 
-import { lookup } from './utils'
+import { lookup, getVaultBasePath } from './utils'
 
 import { statSync } from 'fs'
+
+import { join } from 'path'
 
 export default class MdxDictionary extends Plugin {
   settings: MdxDictionarySettings
@@ -88,7 +90,8 @@ export default class MdxDictionary extends Plugin {
     )
 
     try {
-      statSync(this.settings.fileSavePath)
+      const basePath = getVaultBasePath(this.app)
+      statSync(join(basePath, this.settings.fileSavePath))
     } catch (e) {
       new Notice('Invalid file save path')
       return
@@ -97,15 +100,21 @@ export default class MdxDictionary extends Plugin {
     try {
       await vault.create(`${this.settings.fileSavePath}/${this.settings.word}.md`, definition)
     } catch (e) {
-      const fileSaveFolder = vault.getAbstractFileByPath(this.settings.fileSavePath)
-      if (fileSaveFolder instanceof TFolder) {
-        for (const wordFile of fileSaveFolder.children) {
-          if (wordFile instanceof TFile && wordFile.basename === this.settings.word) {
-            await vault.modify(wordFile, definition)
-            break
+      new SaveFileModal(this.app, async (result: string, vault: Vault) => {
+        const fileSaveFolder = vault.getAbstractFileByPath(this.settings.fileSavePath)
+        if (fileSaveFolder instanceof TFolder) {
+          for (const wordFile of fileSaveFolder.children) {
+            if (wordFile instanceof TFile && wordFile.basename === this.settings.word) {
+              if (result === 'append') {
+                await vault.append(wordFile, definition)
+              } else if (result === 'overwrite') {
+                await vault.modify(wordFile, definition)
+              }
+              break
+            }
           }
         }
-      }
+      }).open()
     }
   }
 }

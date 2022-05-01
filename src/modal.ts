@@ -1,8 +1,10 @@
-import { App, Modal, Setting } from 'obsidian'
+import { App, Modal, Setting, SuggestModal, Notice, Vault } from 'obsidian'
 
 import { VIEW_TYPE_MDX_DICT } from './view'
 
 import { MdxDictionarySettings } from './settings'
+
+import { suggestSaveFile } from './constants'
 
 export class SearchWordModal extends Modal {
   result: string
@@ -46,5 +48,34 @@ export class SearchWordModal extends Modal {
   onClose() {
     const { contentEl } = this
     contentEl.empty()
+  }
+}
+
+interface SaveFileOptions {
+  title: string
+  operation: string
+}
+
+export class SaveFileModal extends SuggestModal<SaveFileOptions> {
+  onSubmit: (result: string, vault: Vault) => void
+
+  constructor(app: App, onSubmit: (result: string, vault: Vault) => void) {
+    super(app)
+    this.onSubmit = onSubmit
+  }
+
+  getSuggestions(query: string): SaveFileOptions[] {
+    return suggestSaveFile.filter((option) =>
+      option.title.toLowerCase().includes(query.toLowerCase())
+    )
+  }
+
+  renderSuggestion(suggestSaveFile: SaveFileOptions, el: HTMLElement) {
+    el.createEl('div', { text: suggestSaveFile.title })
+  }
+
+  onChooseSuggestion(suggestSaveFile: SaveFileOptions, evt: MouseEvent | KeyboardEvent) {
+    this.onSubmit(suggestSaveFile.operation, this.app.vault)
+    new Notice(`${suggestSaveFile.title}`)
   }
 }

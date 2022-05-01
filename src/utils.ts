@@ -4,7 +4,7 @@ import { basename, extname, join } from 'path'
 
 import { readdirSync, statSync } from 'fs'
 
-import { Notice } from 'obsidian'
+import { Notice, App, FileSystemAdapter } from 'obsidian'
 
 // import { convert } from 'html-to-text'
 
@@ -12,7 +12,12 @@ import TurndownService from 'turndown'
 
 const turndownService = new TurndownService()
 
-export function lookup(path: string, word: string, isText: boolean, showWordNonexistenceNotice: boolean): string {
+export function lookup(
+  path: string,
+  word: string,
+  isText: boolean,
+  showWordNonexistenceNotice: boolean
+): string {
   let result = ''
 
   const dictPaths: Array<string> = []
@@ -49,10 +54,7 @@ export function lookup(path: string, word: string, isText: boolean, showWordNone
     const dictBasename = basename(path)
 
     if (definition == null) {
-      notice(
-        `Word in dictionary ${dictBasename} does not exist`,
-        showWordNonexistenceNotice
-      )
+      notice(`Word in dictionary ${dictBasename} does not exist`, showWordNonexistenceNotice)
       definition = 'Word does not exist'
     }
     result += `<h2>${dictBasename}</h2> <br>` + definition + '<br> <hr>'
@@ -67,4 +69,12 @@ export function lookup(path: string, word: string, isText: boolean, showWordNone
 // flag = true means notice will show
 export function notice(text: string, flag: boolean) {
   if (flag) new Notice(text)
+}
+
+export const getVaultBasePath = function (app: App) {
+  const adapter = app.vault.adapter
+  if (adapter instanceof FileSystemAdapter) {
+    return adapter.getBasePath()
+  }
+  return null
 }
