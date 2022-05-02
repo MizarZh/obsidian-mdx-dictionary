@@ -4,12 +4,14 @@ import type MdxDictionary from './main'
 
 import { saveFormatSetting } from './constants'
 
+import type { transformRule } from './types'
+
 export interface MdxDictionarySettings {
   dictPath: string
   fileSavePath: string
 
   saveFormat: string
-  outputRules: RegExp
+  transformRules: Array<transformRule>
 
   showWordNonexistenceNotice: boolean
 
@@ -19,6 +21,8 @@ export interface MdxDictionarySettings {
 export const MDX_DICTIONARY_DEFAULT_SETTINGS: Partial<MdxDictionarySettings> = {
   dictPath: 'C:/',
   word: 'test',
+
+  transformRules: [],
 
   saveFormat: 'markdown',
   showWordNonexistenceNotice: false,
@@ -35,6 +39,8 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this
     containerEl.empty()
+
+    containerEl.createEl('h2', { text: 'General Settings' })
 
     new Setting(containerEl)
       .setName('Dictionary or Folder Path')
@@ -83,5 +89,71 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
           await this.plugin.saveSettings()
         })
       })
+
+    containerEl.createEl('h2', { text: 'Substitute Regexp Settings' })
+    containerEl.createEl('p', { text: 'Substitution performed after saving word as a file' })
+
+    if (this.plugin.settings.transformRules !== undefined) {
+      this.plugin.settings.transformRules.forEach((elem, idx) => {
+        new Setting(containerEl)
+          .setClass('margin-text-input')
+          .setName(`Rule ${idx+1}`)
+          .addText((cb) => {
+            cb.setValue(elem.rule).onChange(async (value) => {
+              elem.rule = value
+              await this.plugin.saveSettings()
+            })
+          })
+          .addText((cb) => {
+            cb.setValue(elem.substitute).onChange(async (value) => {
+              elem.substitute = value
+              await this.plugin.saveSettings()
+            })
+          })
+          .addExtraButton((cb) => {
+            cb.setIcon('up-chevron-glyph').onClick(async () => {
+              if (idx > 0) {
+                const temp = this.plugin.settings.transformRules[idx]
+                this.plugin.settings.transformRules[idx] =
+                  this.plugin.settings.transformRules[idx - 1]
+                this.plugin.settings.transformRules[idx - 1] = temp
+              }
+              await this.plugin.saveSettings()
+              this.display()
+            })
+          })
+          .addExtraButton((cb) => {
+            cb.setIcon('down-chevron-glyph').onClick(async () => {
+              if (idx < this.plugin.settings.transformRules.length - 1) {
+                const temp = this.plugin.settings.transformRules[idx]
+                this.plugin.settings.transformRules[idx] =
+                  this.plugin.settings.transformRules[idx + 1]
+                this.plugin.settings.transformRules[idx + 1] = temp
+              }
+              await this.plugin.saveSettings()
+              this.display()
+            })
+          })
+          .addExtraButton((cb) => {
+            cb.setIcon('cross').onClick(async () => {
+              this.plugin.settings.transformRules.splice(idx, 1)
+              await this.plugin.saveSettings()
+              this.display()
+            })
+          })
+      })
+    }
+
+    new Setting(containerEl).addButton((cb) => {
+      cb.setButtonText('Add rules')
+        .setCta()
+        .onClick(() => {
+          this.plugin.settings.transformRules.push({
+            rule: '',
+            substitute: '',
+          })
+          this.display()
+        })
+    })
   }
 }

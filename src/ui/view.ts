@@ -50,7 +50,8 @@ export class MdxDictionaryView extends ItemView {
       this.settings.dictPath,
       this.settings.word,
       'html',
-      this.settings.showWordNonexistenceNotice
+      this.settings.showWordNonexistenceNotice,
+      []
     )
   }
 }

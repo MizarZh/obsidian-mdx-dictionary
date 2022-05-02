@@ -37,7 +37,8 @@ export async function saveWordToFile() {
     this.settings.dictPath,
     this.settings.word,
     this.settings.saveFormat,
-    this.settings.showWordNonexistenceNotice
+    this.settings.showWordNonexistenceNotice,
+    this.settings.transformRules
   )
 
   try {

@@ -12,6 +12,8 @@ import { notice } from '../utils'
 
 import TurndownService from 'turndown'
 
+import type { transformRule } from '../types'
+
 const turndownService = new TurndownService({
   headingStyle: 'atx',
   hr: '---',
@@ -23,7 +25,8 @@ export function lookup(
   path: string,
   word: string,
   saveFormat: string,
-  showWordNonexistenceNotice: boolean
+  showWordNonexistenceNotice: boolean,
+  substituteSettings: Array<transformRule>
 ): string {
   let result = `<h1>${word}</h1><br><hr><br>`
 
@@ -68,9 +71,23 @@ export function lookup(
     result += `<h2>${dictBasename}</h2> <br>` + definition + '<br> <hr>'
   }
   if (saveFormat === 'markdown') {
-    return turndownService.turndown(result)
+    const preResult = turndownService.turndown(result)
+    return substitute(preResult, substituteSettings)
   } else if (saveFormat === 'text') {
-    return convert(result)
+    const preResult = convert(result)
+    return substitute(preResult, substituteSettings)
   }
   return result
 }
+
+function substitute(text: string, settings: Array<transformRule>): string {
+  let output = text
+  for (const setting of settings) {
+    console.log(setting)
+    const rule = new RegExp(setting.rule, 'g')
+    output = output.replaceAll(rule, setting.substitute)
+  }
+  return output
+}
+
+// \*\*[0-9]\\\.\*\*

@@ -2,3 +2,7 @@
   user-select: text;
   padding: 5px;
 }
+
+.margin-text-input input {
+  margin: 0 10px;
+}
