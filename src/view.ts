@@ -14,6 +14,7 @@ export class MdxDictionaryView extends ItemView {
   async linkOnclick(ev: MouseEvent) {
     ev.preventDefault()
     if (ev.target instanceof HTMLAnchorElement && ev.target.href) {
+      console.log(ev.target.href)
       this.settings.word = ev.target.href.match(/^entry:\/\/(.*)/)[1]
       this.update(this.root, this.container)
     }

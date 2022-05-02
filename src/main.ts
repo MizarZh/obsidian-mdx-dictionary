@@ -1,4 +1,4 @@
-import { Editor, Plugin, TFile, TFolder, Notice, Vault } from 'obsidian'
+import { Editor, Plugin } from 'obsidian'
 
 import { MdxDictionaryView, VIEW_TYPE_MDX_DICT } from './view'
 
@@ -8,22 +8,23 @@ import {
   MdxDictionarySettingTab,
 } from './settings'
 
-import { SearchWordModal, SaveFileModal } from './modal'
+import { SearchWordModal } from './modal'
 
-import { lookup, getVaultBasePath } from './utils'
-
-import { statSync } from 'fs'
-
-import { join } from 'path'
+import { activateView, saveWordToFile } from './utils'
 
 export default class MdxDictionary extends Plugin {
   settings: MdxDictionarySettings
+  activateView: () => Promise<void>
+  saveWordToFile: () => Promise<void>
 
   async onload() {
     await this.loadSettings()
     this.registerView(VIEW_TYPE_MDX_DICT, (leaf) => new MdxDictionaryView(leaf, this.settings))
 
     this.addSettingTab(new MdxDictionarySettingTab(this.app, this))
+
+    this.activateView = activateView.bind(this)
+    this.saveWordToFile = saveWordToFile.bind(this)
 
     this.addCommand({
       id: 'search-word',
@@ -62,51 +63,5 @@ export default class MdxDictionary extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings)
-  }
-
-  async activateView() {
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE_MDX_DICT)
-    await this.app.workspace
-      .getRightLeaf(false)
-      .setViewState({ type: VIEW_TYPE_MDX_DICT, active: true })
-    this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(VIEW_TYPE_MDX_DICT)[0])
-  }
-
-  async saveWordToFile() {
-    const { vault } = this.app
-    const definition = lookup(
-      this.settings.dictPath,
-      this.settings.word,
-      this.settings.isSaveAsText,
-      this.settings.showWordNonexistenceNotice
-    )
-
-    try {
-      const basePath = getVaultBasePath(this.app)
-      statSync(join(basePath, this.settings.fileSavePath))
-    } catch (e) {
-      new Notice('Invalid file save path')
-      return
-    }
-
-    try {
-      await vault.create(`${this.settings.fileSavePath}/${this.settings.word}.md`, definition)
-    } catch (e) {
-      new SaveFileModal(this.app, async (result: string, vault: Vault) => {
-        const fileSaveFolder = vault.getAbstractFileByPath(this.settings.fileSavePath)
-        if (fileSaveFolder instanceof TFolder) {
-          for (const wordFile of fileSaveFolder.children) {
-            if (wordFile instanceof TFile && wordFile.basename === this.settings.word) {
-              if (result === 'append') {
-                await vault.append(wordFile, definition)
-              } else if (result === 'overwrite') {
-                await vault.modify(wordFile, definition)
-              }
-              break
-            }
-          }
-        }
-      }).open()
-    }
   }
 }
