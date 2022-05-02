@@ -1,10 +1,10 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian'
 
-import { MdxDictionarySettings } from './settings'
+import type { MdxDictionarySettings } from '../settings'
 
 export const VIEW_TYPE_MDX_DICT = 'mdx-dict-view'
 
-import { lookup } from './utils'
+import { lookup } from '../lookup/lookup'
 
 export class MdxDictionaryView extends ItemView {
   private settings: MdxDictionarySettings

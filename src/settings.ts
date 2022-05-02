@@ -1,6 +1,6 @@
 import { App, PluginSettingTab, Setting } from 'obsidian'
 
-import MdxDictionary from './main'
+import type MdxDictionary from './main'
 
 import { saveFormatSetting } from './constants'
 
@@ -9,6 +9,7 @@ export interface MdxDictionarySettings {
   fileSavePath: string
 
   saveFormat: string
+  outputRules: RegExp
 
   showWordNonexistenceNotice: boolean
 
@@ -68,7 +69,6 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
         cb.addOptions(saveFormatSetting)
           .setValue(this.plugin.settings.saveFormat)
           .onChange(async (value) => {
-            console.log(value)
             this.plugin.settings.saveFormat = value
             await this.plugin.saveSettings()
           })

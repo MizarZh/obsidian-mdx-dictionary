@@ -1,14 +1,12 @@
 import { Editor, Plugin } from 'obsidian'
 
-import { MdxDictionaryView, VIEW_TYPE_MDX_DICT } from './view'
+import { MdxDictionaryView, VIEW_TYPE_MDX_DICT } from './ui/view'
 
-import {
-  MdxDictionarySettings,
-  MDX_DICTIONARY_DEFAULT_SETTINGS,
-  MdxDictionarySettingTab,
-} from './settings'
+import type { MdxDictionarySettings } from './settings'
 
-import { SearchWordModal } from './modal'
+import { MDX_DICTIONARY_DEFAULT_SETTINGS, MdxDictionarySettingTab } from './settings'
+
+import { SearchWordModal } from './ui/modal'
 
 import { activateView, saveWordToFile } from './utils'
 

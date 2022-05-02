@@ -1,10 +1,10 @@
 import { App, Modal, Setting, SuggestModal, Notice, Vault } from 'obsidian'
 
-import { MdxDictionarySettings } from './settings'
+import type { MdxDictionarySettings } from '../settings'
 
-import { suggestSaveFile } from './constants'
+import { suggestSaveFile } from '../constants'
 
-import { activateView, saveWordToFile } from './utils'
+import { activateView, saveWordToFile } from '../utils'
 
 export class SearchWordModal extends Modal {
   result: string
