@@ -97,18 +97,22 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
       this.plugin.settings.transformRules.forEach((elem, idx) => {
         new Setting(containerEl)
           .setClass('margin-text-input')
-          .setName(`Rule ${idx+1}`)
+          .setName(`Rule ${idx + 1}`)
           .addText((cb) => {
-            cb.setValue(elem.rule).onChange(async (value) => {
-              elem.rule = value
-              await this.plugin.saveSettings()
-            })
+            cb.setValue(elem.rule)
+              .setPlaceholder('pattern (in RegExp)')
+              .onChange(async (value) => {
+                elem.rule = value
+                await this.plugin.saveSettings()
+              })
           })
           .addText((cb) => {
-            cb.setValue(elem.substitute).onChange(async (value) => {
-              elem.substitute = value
-              await this.plugin.saveSettings()
-            })
+            cb.setValue(elem.substitute)
+              .setPlaceholder('substitution')
+              .onChange(async (value) => {
+                elem.substitute = value
+                await this.plugin.saveSettings()
+              })
           })
           .addExtraButton((cb) => {
             cb.setIcon('up-chevron-glyph').onClick(async () => {
@@ -145,13 +149,14 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
     }
 
     new Setting(containerEl).addButton((cb) => {
-      cb.setButtonText('Add rules')
+      cb.setButtonText('Add new rule')
         .setCta()
-        .onClick(() => {
+        .onClick(async () => {
           this.plugin.settings.transformRules.push({
             rule: '',
             substitute: '',
           })
+          await this.plugin.saveSettings()
           this.display()
         })
     })
