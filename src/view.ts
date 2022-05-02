@@ -49,7 +49,7 @@ export class MdxDictionaryView extends ItemView {
     root.innerHTML = lookup(
       this.settings.dictPath,
       this.settings.word,
-      false,
+      'html',
       this.settings.showWordNonexistenceNotice
     )
   }

@@ -2,11 +2,13 @@ import { App, PluginSettingTab, Setting } from 'obsidian'
 
 import MdxDictionary from './main'
 
+import { saveFormatSetting } from './constants'
+
 export interface MdxDictionarySettings {
   dictPath: string
   fileSavePath: string
 
-  isSaveAsText: boolean
+  saveFormat: string
 
   showWordNonexistenceNotice: boolean
 
@@ -17,8 +19,8 @@ export const MDX_DICTIONARY_DEFAULT_SETTINGS: Partial<MdxDictionarySettings> = {
   dictPath: 'C:/',
   word: 'test',
 
-  isSaveAsText: true,
-  showWordNonexistenceNotice: false
+  saveFormat: 'markdown',
+  showWordNonexistenceNotice: false,
 }
 
 export class MdxDictionarySettingTab extends PluginSettingTab {
@@ -62,11 +64,14 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Save Word As markdown')
       .setDesc('save word as markdown format rather than html')
-      .addToggle((cb) => {
-        cb.setValue(this.plugin.settings.isSaveAsText).onChange(async (value) => {
-          this.plugin.settings.isSaveAsText = value
-          await this.plugin.saveSettings()
-        })
+      .addDropdown((cb) => {
+        cb.addOptions(saveFormatSetting)
+          .setValue(this.plugin.settings.saveFormat)
+          .onChange(async (value) => {
+            console.log(value)
+            this.plugin.settings.saveFormat = value
+            await this.plugin.saveSettings()
+          })
       })
 
     new Setting(containerEl)

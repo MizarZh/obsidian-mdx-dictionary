@@ -6,7 +6,7 @@ import { readdirSync, statSync } from 'fs'
 
 import { Notice, App, FileSystemAdapter, Vault, TFolder, TFile } from 'obsidian'
 
-// import { convert } from 'html-to-text'
+import { convert } from 'html-to-text'
 
 import { SaveFileModal } from './modal'
 
@@ -19,7 +19,7 @@ const turndownService = new TurndownService()
 export function lookup(
   path: string,
   word: string,
-  isText: boolean,
+  saveFormat: string,
   showWordNonexistenceNotice: boolean
 ): string {
   let result = `<h1>${word}</h1><br><hr><br>`
@@ -64,9 +64,11 @@ export function lookup(
     }
     result += `<h2>${dictBasename}</h2> <br>` + definition + '<br> <hr>'
   }
-  // console.log(result)
-  if (isText) {
-    result = turndownService.turndown(result)
+  console.log(saveFormat)
+  if (saveFormat === 'markdown') {
+    return turndownService.turndown(result)
+  } else if (saveFormat === 'text') {
+    return convert(result)
   }
   return result
 }
@@ -97,7 +99,7 @@ export async function saveWordToFile() {
   const definition = lookup(
     this.settings.dictPath,
     this.settings.word,
-    this.settings.isSaveAsText,
+    this.settings.saveFormat,
     this.settings.showWordNonexistenceNotice
   )
 
