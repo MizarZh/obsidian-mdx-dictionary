@@ -92,3 +92,36 @@ export class SaveFileModal extends SuggestModal<SaveFileOptions> {
     new Notice(`${suggestSaveFile.title}`)
   }
 }
+
+export class NameChangePrompt extends Modal {
+  originalName: string
+  name: string
+  onSubmit: (name: string) => void
+
+  constructor(app: App, originalName: string, onSubmit: (name: string) => void) {
+    super(app)
+    this.originalName = originalName
+    this.onSubmit = onSubmit
+  }
+  onOpen() {
+    const { contentEl } = this
+    contentEl.createEl('h2', { text: `Change name for group ${this.originalName}` })
+
+    contentEl.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        this.onSubmit(this.name)
+        this.close()
+      }
+    })
+
+    new Setting(contentEl).addText((text) =>
+      text.onChange((value) => {
+        this.name = value
+      })
+    )
+  }
+  onClose() {
+    const { contentEl } = this
+    contentEl.empty()
+  }
+}

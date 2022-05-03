@@ -6,3 +6,7 @@
 .margin-text-input input {
   margin: 0 10px;
 }
+
+.name-change-title {
+  cursor: pointer;
+}

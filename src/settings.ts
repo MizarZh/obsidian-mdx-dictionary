@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, Editor } from 'obsidian'
+import { App, PluginSettingTab, Setting, Editor, Notice } from 'obsidian'
 
 import type MdxDictionary from './main'
 
@@ -8,7 +8,7 @@ import type { substituteRule, MDXDictGroup } from './types'
 
 import { activateView, saveWordToFile, randomStringGenerator } from './utils'
 
-import { SearchWordModal } from './ui/modal'
+import { SearchWordModal, NameChangePrompt } from './ui/modal'
 
 export interface MdxDictionarySettings {
   dictPaths: Array<string>
@@ -67,8 +67,26 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
   addGroupSetting() {
     this.containerEl.createEl('h1', { text: 'Group Settings' })
     if (this.plugin.settings.group !== undefined) {
-      this.plugin.settings.group.forEach((elem, idx) => {
-        this.containerEl.createEl('h2', { text: `Group ${elem.name}` })
+      this.plugin.settings.group.forEach((elem, idx, arr) => {
+        const groupName = this.containerEl.createEl('h2', {
+          text: `Group ${elem.name}`,
+          cls: 'name-change-title',
+        })
+        groupName.addEventListener('click', (ev) => {
+          console.log(ev)
+          new NameChangePrompt(this.app, elem.name, async (name: string) => {
+            // if already exist the name
+            if (arr.some((val) => val.name === name)) {
+              new Notice('Name already exist')
+            } else if (name === '' || name === undefined) {
+              new Notice('Empty group name!')
+            } else {
+              elem.name = name
+              await this.plugin.saveSettings()
+              this.display()
+            }
+          }).open()
+        })
 
         new Setting(this.containerEl)
           .setName('Group management')
@@ -90,10 +108,10 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
               .setTooltip(`delete group ${elem.name}`)
               .onClick(async () => {
                 // remove then add
-                this.removeCommand()
+                this.removeAllCommand()
                 this.plugin.settings.group.splice(idx, 1)
                 await this.plugin.saveSettings()
-                this.addCommand()
+                this.addAllCommand()
                 this.display()
               })
           })
@@ -144,7 +162,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
         .setCta()
         .onClick(async () => {
           // remove then add
-          this.removeCommand()
+          this.removeAllCommand()
           const name = randomStringGenerator()
           this.plugin.settings.group.push({
             name,
@@ -157,7 +175,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
             hotkeySave: '',
           })
           await this.plugin.saveSettings()
-          this.addCommand()
+          this.addAllCommand()
           this.display()
         })
     })
@@ -289,7 +307,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
     })
   }
 
-  addCommand() {
+  addAllCommand() {
     this.plugin.settings.group.forEach((elem) => {
       this.plugin.addCommand({
         id: `search-word-group-${elem.name}`,
@@ -321,7 +339,37 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
     })
   }
 
-  removeCommand() {
+  addCommand(elem: MDXDictGroup) {
+    this.plugin.addCommand({
+      id: `search-word-group-${elem.name}`,
+      name: `Search Word via Group ${elem.name}`,
+      editorCallback: async (editor: Editor) => {
+        const selection = editor.getSelection()
+        if (selection !== '') {
+          this.plugin.settings.word = selection
+          this.plugin.settings.searchGroup = elem
+          await activateView.call(this.plugin, elem)
+        } else {
+          new SearchWordModal(this.app, this.plugin.settings, elem).open()
+        }
+      },
+    })
+
+    this.plugin.addCommand({
+      id: `save-selected-word-to-file-group-${elem.name}`,
+      name: `Save Selected Word To File via group ${elem.name}`,
+      editorCallback: async (editor: Editor) => {
+        const selection = editor.getSelection()
+        if (selection !== '') {
+          this.plugin.settings.word = selection
+          this.plugin.settings.searchGroup = elem
+          await saveWordToFile.call(this.plugin, elem)
+        }
+      },
+    })
+  }
+
+  removeAllCommand() {
     this.plugin.settings.group.forEach((elem) => {
       // unoffical
 
@@ -333,7 +381,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
         `${this.plugin.manifest.id}:save-selected-word-to-file-group-${elem.name}`
       )
       // @ts-ignore
-      console.log(this.app.commands)
+      // console.log(this.app.commands)
     })
   }
 }
