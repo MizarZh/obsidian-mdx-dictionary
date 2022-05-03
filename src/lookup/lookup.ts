@@ -25,7 +25,7 @@ export function lookup(
   paths: Array<string>,
   word: string,
   saveFormat: string,
-  showWordNonexistenceNotice: boolean,
+  showNotice: boolean,
   substituteSettings: Array<substituteRule>
 ): string {
   let result = `<h1>${word}</h1><br><hr><br>`
@@ -68,7 +68,7 @@ export function lookup(
     const dictBasename = basename(path)
 
     if (definition == null) {
-      notice(`Word in dictionary ${dictBasename} does not exist`, showWordNonexistenceNotice)
+      notice(`Word in dictionary ${dictBasename} does not exist`, showNotice)
       definition = 'Word does not exist'
     }
     result += `<h2>${dictBasename}</h2> <br>` + definition + '<br> <hr>'
@@ -86,13 +86,18 @@ export function lookup(
 function substitute(text: string, settings: Array<substituteRule>): string {
   let output = text
   for (const setting of settings) {
-    console.log(setting)
     const rule = new RegExp(setting.rule, 'g')
     output = output.replaceAll(rule, setting.substitute)
   }
   return output
 }
 
-
+// function concat(word: string, names: Array<string>, texts: Array<string>): string {
+//   let result = `<h1>${word}</h1><hr><br>`
+//   for (let i = 0; i < names.length; i++) {
+//     result += `<h2>${names[i]}</h2> <br>` + texts[i] + '<br> <hr>'
+//   }
+//   return result
+// }
 
 // \*\*[0-9]\\\.\*\*

@@ -6,22 +6,22 @@ import { suggestSaveFile } from '../constants'
 
 import { activateView, saveWordToFile } from '../utils'
 
+import type { MDXDictGroup } from 'src/types'
+
 export class SearchWordModal extends Modal {
-  result: string
-  settings: MdxDictionarySettings
-  activateView: () => Promise<void>
-  saveWordToFile: () => Promise<void>
+  private result: string
+  private settings: MdxDictionarySettings
+  private group: MDXDictGroup
 
   async onSubmit(result: string) {
     this.settings.word = result
-    await this.activateView()
+    await activateView.call(this)
   }
 
-  constructor(app: App, settings: MdxDictionarySettings) {
+  constructor(app: App, settings: MdxDictionarySettings, group: MDXDictGroup) {
     super(app)
     this.settings = settings
-    this.activateView = activateView.bind(this)
-    this.saveWordToFile = saveWordToFile.bind(this)
+    this.group = group
   }
   onOpen() {
     const { contentEl } = this
@@ -45,7 +45,7 @@ export class SearchWordModal extends Modal {
         btn.setButtonText('Save as file').onClick(async () => {
           this.close()
           this.settings.word = this.result
-          await this.saveWordToFile()
+          await saveWordToFile.call(this, this.group)
         })
       })
       .addButton((btn) =>
