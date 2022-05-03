@@ -34,7 +34,7 @@ export async function activateView() {
 export async function saveWordToFile() {
   const { vault } = this.app
   const definition = lookup(
-    this.settings.dictPath,
+    this.settings.dictPaths,
     this.settings.word,
     this.settings.saveFormat,
     this.settings.showWordNonexistenceNotice,

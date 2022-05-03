@@ -4,14 +4,16 @@ import type MdxDictionary from './main'
 
 import { saveFormatSetting } from './constants'
 
-import type { transformRule } from './types'
+import type { substituteRule, MDXDictGroup } from './types'
 
 export interface MdxDictionarySettings {
-  dictPath: string
+  dictPaths: Array<string>
   fileSavePath: string
 
   saveFormat: string
-  transformRules: Array<transformRule>
+  transformRules: Array<substituteRule>
+
+  group: MDXDictGroup
 
   showWordNonexistenceNotice: boolean
 
@@ -19,7 +21,7 @@ export interface MdxDictionarySettings {
 }
 
 export const MDX_DICTIONARY_DEFAULT_SETTINGS: Partial<MdxDictionarySettings> = {
-  dictPath: 'C:/',
+  dictPaths: [],
   word: 'test',
 
   transformRules: [],
@@ -37,25 +39,71 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
   }
 
   display(): void {
-    const { containerEl } = this
-    containerEl.empty()
+    this.containerEl.empty()
+    this.addGeneralHeader()
+    this.addGeneralSetting()
+    this.addSubstituteHeader()
+    this.addSubstituteSetting()
+  }
+  addGeneralHeader() {
+    this.containerEl.createEl('h2', { text: 'General Settings' })
+  }
 
-    containerEl.createEl('h2', { text: 'General Settings' })
-
-    new Setting(containerEl)
-      .setName('Dictionary or Folder Path')
-      .setDesc('absolute path to your dictionary or folder containing them')
-      .addText((text) => {
-        text
-          .setPlaceholder('path/to/your/dictionary')
-          .setValue(this.plugin.settings.dictPath)
-          .onChange(async (value) => {
-            this.plugin.settings.dictPath = value
-            await this.plugin.saveSettings()
+  addGeneralSetting() {
+    if (this.plugin.settings.dictPaths !== undefined) {
+      this.plugin.settings.dictPaths.forEach((elem, idx) => {
+        new Setting(this.containerEl)
+          .setName(`Dict / Folder Path ${idx + 1}`)
+          .addText((cb) => {
+            cb.setValue(elem)
+              .setPlaceholder('absolute/path/to/your/dict')
+              .onChange(async (value) => {
+                this.plugin.settings.dictPaths[idx] = value
+                await this.plugin.saveSettings()
+              })
+          })
+          .addExtraButton((cb) => {
+            cb.setIcon('up-chevron-glyph').onClick(async () => {
+              if (idx > 0) {
+                const temp = this.plugin.settings.dictPaths[idx]
+                this.plugin.settings.dictPaths[idx] = this.plugin.settings.dictPaths[idx - 1]
+                this.plugin.settings.dictPaths[idx - 1] = temp
+              }
+              await this.plugin.saveSettings()
+              this.display()
+            })
+          })
+          .addExtraButton((cb) => {
+            cb.setIcon('down-chevron-glyph').onClick(async () => {
+              if (idx < this.plugin.settings.dictPaths.length - 1) {
+                const temp = this.plugin.settings.dictPaths[idx]
+                this.plugin.settings.dictPaths[idx] = this.plugin.settings.dictPaths[idx + 1]
+                this.plugin.settings.dictPaths[idx + 1] = temp
+              }
+              await this.plugin.saveSettings()
+              this.display()
+            })
+          })
+          .addExtraButton((cb) => {
+            cb.setIcon('cross').onClick(async () => {
+              this.plugin.settings.dictPaths.splice(idx, 1)
+              await this.plugin.saveSettings()
+              this.display()
+            })
           })
       })
+    }
+    new Setting(this.containerEl).addButton((cb) => {
+      cb.setButtonText('Add new dictionary path')
+        .setCta()
+        .onClick(async () => {
+          this.plugin.settings.dictPaths.push('')
+          await this.plugin.saveSettings()
+          this.display()
+        })
+    })
 
-    new Setting(containerEl)
+    new Setting(this.containerEl)
       .setName('File Save Path')
       .setDesc('with respect to current vault')
       .addText((text) => {
@@ -68,7 +116,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
           })
       })
 
-    new Setting(containerEl)
+    new Setting(this.containerEl)
       .setName('Save Word As markdown')
       .setDesc('save word as markdown format rather than html')
       .addDropdown((cb) => {
@@ -80,7 +128,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
           })
       })
 
-    new Setting(containerEl)
+    new Setting(this.containerEl)
       .setName('Show Word Notices')
       .setDesc('')
       .addToggle((cb) => {
@@ -89,13 +137,15 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
           await this.plugin.saveSettings()
         })
       })
-
-    containerEl.createEl('h2', { text: 'Substitute Regexp Settings' })
-    containerEl.createEl('p', { text: 'Substitution performed after saving word as a file' })
-
+  }
+  addSubstituteHeader() {
+    this.containerEl.createEl('h2', { text: 'Substitute Regexp Settings' })
+    this.containerEl.createEl('p', { text: 'Substitution performed after saving word as a file' })
+  }
+  addSubstituteSetting() {
     if (this.plugin.settings.transformRules !== undefined) {
       this.plugin.settings.transformRules.forEach((elem, idx) => {
-        new Setting(containerEl)
+        new Setting(this.containerEl)
           .setClass('margin-text-input')
           .setName(`Rule ${idx + 1}`)
           .addText((cb) => {
@@ -148,7 +198,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
       })
     }
 
-    new Setting(containerEl).addButton((cb) => {
+    new Setting(this.containerEl).addButton((cb) => {
       cb.setButtonText('Add new rule')
         .setCta()
         .onClick(async () => {
