@@ -114,14 +114,18 @@ export class NameChangePrompt extends Modal {
       }
     })
 
-    new Setting(contentEl).addText((text) =>
+    new Setting(contentEl).setName('new group name').addText((text) => {
       text.onChange((value) => {
         this.name = value
       })
-    )
+    })
   }
   onClose() {
     const { contentEl } = this
     contentEl.empty()
   }
 }
+
+// export class DeleteConfirm extends Modal {
+//   onSubmit: (name: string) => void
+// }
