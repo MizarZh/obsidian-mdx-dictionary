@@ -6,3 +6,15 @@
 .margin-text-input input {
   margin: 0 10px;
 }
+
+.name-change-title {
+  cursor: pointer;
+}
+
+.mdx-dict-group-hr {
+  border-top: 3px double #333;
+}
+
+.full-width-input {
+  width: 100%;
+}

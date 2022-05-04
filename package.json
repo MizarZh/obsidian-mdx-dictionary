@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-mdx-dictionary",
-	"version": "0.2.0",
+	"version": "0.3.2",
 	"description": "obsidian-mdx-dictionary",
 	"main": "main.js",
 	"scripts": {

@@ -12,7 +12,7 @@ import { notice } from '../utils'
 
 import TurndownService from 'turndown'
 
-import type { transformRule } from '../types'
+import type { substituteRule } from '../types'
 
 const turndownService = new TurndownService({
   headingStyle: 'atx',
@@ -22,50 +22,53 @@ const turndownService = new TurndownService({
 })
 
 export function lookup(
-  path: string,
+  paths: Array<string>,
   word: string,
   saveFormat: string,
-  showWordNonexistenceNotice: boolean,
-  substituteSettings: Array<transformRule>
+  showNotice: boolean,
+  substituteSettings: Array<substituteRule>
 ): string {
   let result = `<h1>${word}</h1><br><hr><br>`
 
-  const dictPaths: Array<string> = []
-  try {
-    statSync(path)
-  } catch (e) {
-    new Notice('Invalid dictionary path')
-    return ''
-  }
-  const stat = statSync(path)
+  const dictAllPaths: Array<string> = []
+  for (let i = 0; i < paths.length; i++) {
+    const path = paths[i]
+    try {
+      statSync(path)
+    } catch (e) {
+      new Notice(`Invalid dictionary path on dict / folder path ${i + 1}`)
+      return ''
+    }
+    const stat = statSync(path)
 
-  // if path points to a folder
-  if (stat.isDirectory()) {
-    const fileList = readdirSync(path)
-    for (const file of fileList) {
-      if (extname(file).match(/\.(mdx|mdd)/)) dictPaths.push(join(path, file))
-    }
-    if (dictPaths.length === 0) {
-      new Notice('No mdx/mdd files in the chosen directory')
-      return ''
-    }
-    // if path points to a file
-  } else {
-    if (extname(path).match(/\.(mdx|mdd)/)) dictPaths.push(path)
-    else {
-      new Notice('Specified file is not a mdx/mdd file')
-      return ''
+    // if path points to a folder
+    if (stat.isDirectory()) {
+      const fileList = readdirSync(path)
+      for (const file of fileList) {
+        if (extname(file).match(/\.(mdx|mdd)/)) dictAllPaths.push(join(path, file))
+      }
+      if (dictAllPaths.length === 0) {
+        new Notice('No mdx/mdd files in the chosen directory')
+        return ''
+      }
+      // if path points to a file
+    } else {
+      if (extname(path).match(/\.(mdx|mdd)/)) dictAllPaths.push(path)
+      else {
+        new Notice('Specified file is not a mdx/mdd file')
+        return ''
+      }
     }
   }
-  // console.log(files)
-  for (const path of dictPaths) {
+
+  // real lookup process via js-mdict
+  for (const path of dictAllPaths) {
     const dict = new Mdict(path)
     let definition = dict.lookup(word).definition
-    // console.log(dict.fuzzy_search(word, 20, 5))
     const dictBasename = basename(path)
 
     if (definition == null) {
-      notice(`Word in dictionary ${dictBasename} does not exist`, showWordNonexistenceNotice)
+      notice(`Word in dictionary ${dictBasename} does not exist`, showNotice)
       definition = 'Word does not exist'
     }
     result += `<h2>${dictBasename}</h2> <br>` + definition + '<br> <hr>'
@@ -80,14 +83,21 @@ export function lookup(
   return result
 }
 
-function substitute(text: string, settings: Array<transformRule>): string {
+function substitute(text: string, settings: Array<substituteRule>): string {
   let output = text
   for (const setting of settings) {
-    console.log(setting)
     const rule = new RegExp(setting.rule, 'g')
     output = output.replaceAll(rule, setting.substitute)
   }
   return output
 }
+
+// function concat(word: string, names: Array<string>, texts: Array<string>): string {
+//   let result = `<h1>${word}</h1><hr><br>`
+//   for (let i = 0; i < names.length; i++) {
+//     result += `<h2>${names[i]}</h2> <br>` + texts[i] + '<br> <hr>'
+//   }
+//   return result
+// }
 
 // \*\*[0-9]\\\.\*\*
