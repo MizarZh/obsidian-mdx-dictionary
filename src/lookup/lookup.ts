@@ -8,7 +8,7 @@ import { readdirSync, statSync } from 'fs'
 
 import { convert } from 'html-to-text'
 
-import { notice } from '../utils'
+import { notice, checkPathValid } from '../utils'
 
 import TurndownService from 'turndown'
 
@@ -33,32 +33,32 @@ export function lookup(
   const dictAllPaths: Array<string> = []
   for (let i = 0; i < paths.length; i++) {
     const path = paths[i]
-    try {
-      statSync(path)
-    } catch (e) {
+
+    if (checkPathValid(path)) {
+      const stat = statSync(path)
+      if (stat.isDirectory()) {
+        const fileList = readdirSync(path)
+        for (const file of fileList) {
+          if (extname(file).match(/\.(mdx|mdd)/)) dictAllPaths.push(join(path, file))
+        }
+        if (dictAllPaths.length === 0) {
+          new Notice('No mdx/mdd files in the chosen directory')
+          return ''
+        }
+        // if path points to a file
+      } else {
+        if (extname(path).match(/\.(mdx|mdd)/)) dictAllPaths.push(path)
+        else {
+          new Notice('Specified file is not a mdx/mdd file')
+          return ''
+        }
+      }
+    } else {
       new Notice(`Invalid dictionary path on dict / folder path ${i + 1}`)
       return ''
     }
-    const stat = statSync(path)
 
     // if path points to a folder
-    if (stat.isDirectory()) {
-      const fileList = readdirSync(path)
-      for (const file of fileList) {
-        if (extname(file).match(/\.(mdx|mdd)/)) dictAllPaths.push(join(path, file))
-      }
-      if (dictAllPaths.length === 0) {
-        new Notice('No mdx/mdd files in the chosen directory')
-        return ''
-      }
-      // if path points to a file
-    } else {
-      if (extname(path).match(/\.(mdx|mdd)/)) dictAllPaths.push(path)
-      else {
-        new Notice('Specified file is not a mdx/mdd file')
-        return ''
-      }
-    }
   }
 
   // real lookup process via js-mdict
@@ -87,7 +87,7 @@ function substitute(text: string, settings: Array<substituteRule>): string {
   let output = text
   for (const setting of settings) {
     const rule = new RegExp(setting.rule, 'g')
-    output = output.replaceAll(rule, setting.substitute)
+    output = output.replaceAll(rule, setting.substitute.replaceAll('\\n', '\n')) // newline substitute
   }
   return output
 }
@@ -101,3 +101,4 @@ function substitute(text: string, settings: Array<substituteRule>): string {
 // }
 
 // \*\*[0-9]\\\.\*\*
+// \*\*(M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3}))\.\*\*

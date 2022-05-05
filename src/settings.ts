@@ -8,7 +8,7 @@ import type { substituteRule, MDXDictGroup } from './types'
 
 import { activateView, saveWordToFile, randomStringGenerator } from './utils'
 
-import { SearchWordModal, NameChangePrompt } from './ui/modal'
+import { SearchWordModal, NameChangeModal } from './ui/modal'
 
 export interface MdxDictionarySettings {
   dictPaths: Array<string>
@@ -27,13 +27,6 @@ export interface MdxDictionarySettings {
 
 export const MDX_DICTIONARY_DEFAULT_SETTINGS: Partial<MdxDictionarySettings> = {
   group: [],
-  dictPaths: [],
-  word: '',
-
-  transformRules: [],
-
-  saveFormat: 'markdown',
-  showWordNonexistenceNotice: false,
 }
 
 export class MdxDictionarySettingTab extends PluginSettingTab {
@@ -95,7 +88,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
         })
         groupName.addEventListener('click', (ev) => {
           console.log(ev)
-          new NameChangePrompt(this.app, elem.name, async (name: string) => {
+          new NameChangeModal(this.app, elem.name, async (name: string) => {
             // if already exist the name
             if (arr.some((val) => val.name === name)) {
               new Notice('Name already exist')
@@ -121,7 +114,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
                 this.app.setting.openTabById('hotkeys')
                 // @ts-ignore
                 const tab = this.app.setting.activeTab
-                tab.searchInputEl.value = 'MDX Dictionary: Search Word via Group ' + elem.name
+                tab.searchInputEl.value = `MDX Dictionary: Search Word via Group <${elem.name}>`
                 tab.updateHotkeyVisibility()
               })
           })
@@ -135,7 +128,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
                 // @ts-ignore
                 const tab = this.app.setting.activeTab
                 tab.searchInputEl.value =
-                  'MDX Dictionary: Save Selected Word To File via Group ' + elem.name
+                `MDX Dictionary: Save Selected Word To File via Group <${elem.name}>`
                 tab.updateHotkeyVisibility()
               })
           })
@@ -345,7 +338,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
     this.plugin.settings.group.forEach((elem) => {
       this.plugin.addCommand({
         id: `search-word-group-${elem.name}`,
-        name: `Search Word via Group ${elem.name}`,
+        name: `Search Word via Group <${elem.name}>`,
         editorCallback: async (editor: Editor) => {
           const selection = editor.getSelection()
           if (selection !== '') {
@@ -360,7 +353,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
 
       this.plugin.addCommand({
         id: `save-selected-word-to-file-group-${elem.name}`,
-        name: `Save Selected Word To File via group ${elem.name}`,
+        name: `Save Selected Word To File via Group <${elem.name}>`,
         editorCallback: async (editor: Editor) => {
           const selection = editor.getSelection()
           if (selection !== '') {
@@ -373,35 +366,35 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
     })
   }
 
-  addCommand(elem: MDXDictGroup) {
-    this.plugin.addCommand({
-      id: `search-word-group-${elem.name}`,
-      name: `Search Word via Group ${elem.name}`,
-      editorCallback: async (editor: Editor) => {
-        const selection = editor.getSelection()
-        if (selection !== '') {
-          this.plugin.settings.word = selection
-          this.plugin.settings.searchGroup = elem
-          await activateView.call(this.plugin, elem)
-        } else {
-          new SearchWordModal(this.app, this.plugin.settings, elem).open()
-        }
-      },
-    })
+  // addCommand(elem: MDXDictGroup) {
+  //   this.plugin.addCommand({
+  //     id: `search-word-group-${elem.name}`,
+  //     name: `Search Word via Group "${elem.name}"`,
+  //     editorCallback: async (editor: Editor) => {
+  //       const selection = editor.getSelection()
+  //       if (selection !== '') {
+  //         this.plugin.settings.word = selection
+  //         this.plugin.settings.searchGroup = elem
+  //         await activateView.call(this.plugin, elem)
+  //       } else {
+  //         new SearchWordModal(this.app, this.plugin.settings, elem).open()
+  //       }
+  //     },
+  //   })
 
-    this.plugin.addCommand({
-      id: `save-selected-word-to-file-group-${elem.name}`,
-      name: `Save Selected Word To File via group ${elem.name}`,
-      editorCallback: async (editor: Editor) => {
-        const selection = editor.getSelection()
-        if (selection !== '') {
-          this.plugin.settings.word = selection
-          this.plugin.settings.searchGroup = elem
-          await saveWordToFile.call(this.plugin, elem)
-        }
-      },
-    })
-  }
+  //   this.plugin.addCommand({
+  //     id: `save-selected-word-to-file-group-${elem.name}`,
+  //     name: `Save Selected Word To File via group ${elem.name}`,
+  //     editorCallback: async (editor: Editor) => {
+  //       const selection = editor.getSelection()
+  //       if (selection !== '') {
+  //         this.plugin.settings.word = selection
+  //         this.plugin.settings.searchGroup = elem
+  //         await saveWordToFile.call(this.plugin, elem)
+  //       }
+  //     },
+  //   })
+  // }
 
   removeAllCommand() {
     this.plugin.settings.group.forEach((elem) => {
