@@ -30,6 +30,37 @@ export function lookup(
 ): string {
   let result = `<h1>${word}</h1><br><hr><br>`
 
+  const dictAllPaths: Array<string> = getAllDict(paths)
+  if (dictAllPaths.length === 0) return 'No dictionary exists'
+
+  // real lookup process via js-mdict
+  for (const path of dictAllPaths) {
+    const dict = new Mdict(path)
+    let definition = dict.lookup(word).definition
+    // console.log(definition)
+    // const parser = new DOMParser()
+    // const definition_HTML = parser.parseFromString(definition, 'text/html')
+    // console.log(definition_HTML.head)
+
+    const dictBasename = basename(path)
+
+    if (definition == null) {
+      notice(`Word in dictionary ${dictBasename} does not exist`, showNotice)
+      definition = 'Word does not exist'
+    }
+    result += `<h2>${dictBasename}</h2> <br> <div class="test">${definition}</div> <br> <hr>`
+  }
+  if (saveFormat === 'markdown') {
+    const preResult = turndownService.turndown(result)
+    return substitute(preResult, substituteSettings)
+  } else if (saveFormat === 'text') {
+    const preResult = convert(result)
+    return substitute(preResult, substituteSettings)
+  }
+  return result
+}
+
+function getAllDict(paths: Array<string>): Array<string> {
   const dictAllPaths: Array<string> = []
   for (let i = 0; i < paths.length; i++) {
     const path = paths[i]
@@ -43,44 +74,22 @@ export function lookup(
         }
         if (dictAllPaths.length === 0) {
           new Notice('No mdx/mdd files in the chosen directory')
-          return ''
+          return []
         }
         // if path points to a file
       } else {
         if (extname(path).match(/\.(mdx|mdd)/)) dictAllPaths.push(path)
         else {
           new Notice('Specified file is not a mdx/mdd file')
-          return ''
+          return []
         }
       }
     } else {
       new Notice(`Invalid dictionary path on dict / folder path ${i + 1}`)
-      return ''
+      return []
     }
-
-    // if path points to a folder
   }
-
-  // real lookup process via js-mdict
-  for (const path of dictAllPaths) {
-    const dict = new Mdict(path)
-    let definition = dict.lookup(word).definition
-    const dictBasename = basename(path)
-
-    if (definition == null) {
-      notice(`Word in dictionary ${dictBasename} does not exist`, showNotice)
-      definition = 'Word does not exist'
-    }
-    result += `<h2>${dictBasename}</h2> <br>` + definition + '<br> <hr>'
-  }
-  if (saveFormat === 'markdown') {
-    const preResult = turndownService.turndown(result)
-    return substitute(preResult, substituteSettings)
-  } else if (saveFormat === 'text') {
-    const preResult = convert(result)
-    return substitute(preResult, substituteSettings)
-  }
-  return result
+  return dictAllPaths
 }
 
 function substitute(text: string, settings: Array<substituteRule>): string {

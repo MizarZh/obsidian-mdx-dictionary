@@ -6,7 +6,7 @@ import type { MdxDictionarySettings } from './settings'
 
 import { MDX_DICTIONARY_DEFAULT_SETTINGS, MdxDictionarySettingTab } from './settings'
 
-import { SearchWordModal, BatchOutputModal } from './ui/modal'
+import { SearchWordModal, BatchOutputModal, FileBatchOutputModal } from './ui/modal'
 
 import { activateView, saveWordToFile, checkPathValid, obsidianRel2AbsPath } from './utils'
 
@@ -64,11 +64,9 @@ export default class MdxDictionary extends Plugin {
                   elem.name === groupName ? true : false
                 ),
                 group = this.settings.group[groupIdx]
-              console.log(groupIdx, group, groupName)
               path = obsidianRel2AbsPath(path)
               this.settings.searchGroup = group
               if (checkPathValid(path)) {
-                console.log(words)
                 words.forEach(async (elem) => {
                   this.settings.word = elem
                   await saveWordToFile.call(this, group)
@@ -87,7 +85,34 @@ export default class MdxDictionary extends Plugin {
     this.addCommand({
       id: 'batch-output-to-files-via-file',
       name: `Batch Output Words to Files with Word List selected`,
-      callback: async () => {},
+      callback: async () => {
+        if (this.settings.group.length !== 0) {
+          new FileBatchOutputModal(
+            this.app,
+            this.settings.group.map((elem) => elem.name),
+            (groupName: string, inputPath: string, outputPath: string) => {
+              const groupIdx = this.settings.group.findIndex((elem) =>
+                  elem.name === groupName ? true : false
+                ),
+                group = this.settings.group[groupIdx]
+                group
+              inputPath = obsidianRel2AbsPath(inputPath)
+              outputPath = obsidianRel2AbsPath(outputPath)
+              if (checkPathValid(inputPath) && checkPathValid(outputPath)) {
+                // TODO read words from vault
+                // words.forEach(async (elem) => {
+                //   this.settings.word = elem
+                //   await saveWordToFile.call(this, group)
+                // })
+              } else {
+                new Notice('Invalid path')
+              }
+            }
+          )
+        } else {
+          new Notice('No group has created')
+        }
+      },
     })
 
     // this.activateView = activateView.bind(this)

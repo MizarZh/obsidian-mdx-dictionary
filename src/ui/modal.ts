@@ -196,3 +196,63 @@ export class BatchOutputModal extends Modal {
     contentEl.empty()
   }
 }
+
+export class FileBatchOutputModal extends Modal {
+  private groupNames: Array<string>
+  private groupName: string
+  private outputPath: string
+  private inputPath: string
+  onSubmit: (groupName: string, inputPath: string, outputPath: string) => void
+
+  constructor(
+    app: App,
+    groupNames: Array<string>,
+    onSubmit: (groupName: string, inputPath: string, outputPath: string) => void
+  ) {
+    super(app)
+    this.groupNames = groupNames
+    this.onSubmit = onSubmit
+  }
+
+  // TODO invalid notation in filesystem, regexp pattern for words
+  // \ / : * ? " < > | in windows
+  onOpen() {
+    const { contentEl } = this
+    contentEl.createEl('h1', { text: 'Batch Word (from file) Output' })
+
+    contentEl.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        this.onSubmit(this.groupName, this.inputPath, this.outputPath)
+        this.close()
+      }
+    })
+
+    new Setting(contentEl).setName('group').addDropdown((cb) => {
+      this.groupNames.forEach((elem) => {
+        cb.addOption(elem, elem)
+      })
+      this.groupName = this.groupNames[0]
+      cb.setValue(this.groupNames[0]).onChange((value) => {
+        this.groupName = value
+      })
+    })
+
+    new Setting(contentEl).setName('input path').addText((text) => {
+      text.inputEl.addClass('full-width-input')
+      text.onChange((value) => {
+        this.inputPath = value
+      })
+    })
+
+    new Setting(contentEl).setName('output path').addText((text) => {
+      text.inputEl.addClass('full-width-input')
+      text.onChange((value) => {
+        this.outputPath = value
+      })
+    })
+  }
+  onClose() {
+    const { contentEl } = this
+    contentEl.empty()
+  }
+}

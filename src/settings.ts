@@ -82,7 +82,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
         // const singleGroup = this.containerEl.createDiv()
         this.containerEl.createEl('hr', { cls: 'mdx-dict-group-hr' })
 
-        const groupName = this.containerEl.createEl('h2', {
+        const groupName = this.containerEl.createEl('h3', {
           text: `Group ${elem.name}`,
           cls: 'name-change-title',
         })
@@ -188,7 +188,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
   }
 
   addPathSetting(group: MDXDictGroup) {
-    this.containerEl.createEl('h3', { text: 'dictionary path setting' })
+    this.containerEl.createEl('h4', { text: 'dictionary path setting' })
     this.containerEl.createEl('div', {
       text: 'both mdx/mdd files and folders contaning dictionaries are acceptable',
       cls: 'setting-item-description',
@@ -261,7 +261,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
   }
 
   addSubstituteSetting(group: MDXDictGroup) {
-    this.containerEl.createEl('h3', { text: 'Substitute Regexp Settings' })
+    this.containerEl.createEl('h4', { text: 'Substitute Regexp Settings' })
     this.containerEl.createEl('div', {
       text: 'Substitution performed after saving word as a file',
       cls: 'setting-item-description',
@@ -333,7 +333,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
         })
     })
   }
-
+  // TODO add/remove single command instead of all of them
   addAllCommand() {
     this.plugin.settings.group.forEach((elem) => {
       this.plugin.addCommand({
