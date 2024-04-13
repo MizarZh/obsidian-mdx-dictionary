@@ -1,10 +1,10 @@
 import Mdict from 'js-mdict'
 
-import { basename, extname, join } from 'path'
+import { basename, extname, join, dirname } from 'path'
 
 import { Notice } from 'obsidian'
 
-import { readdirSync, statSync } from 'fs'
+import { readdirSync, statSync, readFileSync } from 'fs'
 
 import { convert } from 'html-to-text'
 
@@ -36,11 +36,53 @@ export function lookup(
   // real lookup process via js-mdict
   for (const path of dictAllPaths) {
     const dict = new Mdict(path)
-    let definition = dict.lookup(word).definition
-    // console.log(definition)
-    // const parser = new DOMParser()
-    // const definition_HTML = parser.parseFromString(definition, 'text/html')
-    // console.log(definition_HTML.head)
+    let definition = dict.lookup(word).definition as string
+    if (definition !== null) {
+      // definition = definition.replace(
+      //   /<link\s+rel=['"]stylesheet['"]\s+type=['"]text\/css['"]\s+href=['"]([^'"]+)['"]>/,
+      //   `<link rel="stylesheet" type="text/css" href="file://${dirname(path)}/$1">`
+      // )
+
+      // definition = definition.replace(
+      //   '<link rel="stylesheet" type="text/css" href="coca.css">',
+      //   `<link rel="stylesheet" type="text/css" href="http://localhost:8081/coca.css">`
+      // )
+      
+
+      definition = definition.replace(
+        /<link\s+rel=['"]stylesheet['"]\s+type=['"]text\/css['"]\s+href=['"]([^'"]+)['"]>/,
+        (match, cssPath) => {
+          const cssContent = readFileSync(join(dirname(path), cssPath), 'utf-8')
+          return `<style>
+          @scope {
+            ${cssContent}
+          }</style>`
+        }
+      )
+
+      definition = definition.replace(/<script\s+src=['"]([^'"]+)['"]>/, (match, jsPath) => {
+        const jsContent = readFileSync(join(dirname(path), jsPath), 'utf-8')
+        return `<script>${jsContent}</script>`
+      })
+    }
+
+    console.log(definition)
+    // <link rel="stylesheet" type="text/css" href="coca.css">
+    // definition.replace(/<link><\/link>/)
+    //   // console.log(definition)
+    //   const parser = new DOMParser()
+    //   const definition_HTML = parser.parseFromString(definition, 'text/html')
+    //   definition_HTML.querySelectorAll(`link`).forEach((val) => {
+    //     if (val.type === 'text/css') {
+    //       // val.href = `file://`
+    //       val.href = `file://${join(dirname(path), basename(val.href))}`
+    //       // console.log(join(dirname(path), basename(val.href)))
+    //     }
+    //   })
+    //   definition_HTML.querySelectorAll(`script`).forEach((val) => {
+    //     val.src = `file://${join(dirname(path), basename(val.src))}`
+    //   })
+    //   console.log(definition_HTML)
 
     const dictBasename = basename(path)
 
@@ -48,7 +90,7 @@ export function lookup(
       notice(`Word in dictionary ${dictBasename} does not exist`, showNotice)
       definition = 'Word does not exist'
     }
-    result += `<h2>${dictBasename}</h2> <br> <div class="test">${definition}</div> <br> <hr>`
+    result += `<h2>${dictBasename}</h2> <br> <div class="word-definition-results">${definition}</div> <br> <hr>`
   }
   if (saveFormat === 'markdown') {
     const preResult = turndownService.turndown(result)
