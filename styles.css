@@ -19,3 +19,19 @@
   width: 100%;
 }
 
+.word-definition-results {
+  /* width: 100%; */
+  width: 1px;
+  min-width: 100%;
+  border: none;
+  height: 2em;
+}
+
+.mdx-dict-sidebar {
+  background-color: #eee;
+}
+
+.mdx-dict-sidebar h1,
+.mdx-dict-sidebar h2 {
+  color: black;
+}

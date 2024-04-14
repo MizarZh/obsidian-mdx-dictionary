@@ -4,7 +4,7 @@ import type MdxDictionary from './main'
 
 import { saveFormatSetting } from './constants'
 
-import type { substituteRule, MDXDictGroup } from './types'
+import type { substituteRule, MDXDictGroup, MDXServerPathGroup } from './types'
 
 import { activateView, saveWordToFile, randomStringGenerator } from './utils'
 
@@ -17,6 +17,7 @@ export interface MdxDictionarySettings {
   transformRules: Array<substituteRule>
 
   group: Array<MDXDictGroup>
+  pathGroup: MDXServerPathGroup
 
   showWordNonexistenceNotice: boolean
 
@@ -45,6 +46,17 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
   addGeneralSetting() {
     this.containerEl.createEl('h1', { text: 'General Settings' })
     // this.addGroupSetting()
+    new Setting(this.containerEl)
+      .setName('Refresh files')
+      .setDesc(
+        'Refresh if something has changed in the file system (for example a new dictionary is added)'
+      )
+      .addExtraButton((cb) => {
+        cb.setIcon('rotate-ccw').onClick(() => {
+          this.plugin.server.updatePath()
+          new Notice('Path updated!')
+        })
+      })
   }
 
   addGroupSetting() {

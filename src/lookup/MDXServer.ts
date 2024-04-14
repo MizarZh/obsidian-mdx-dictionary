@@ -1,10 +1,13 @@
 import express from 'express'
 import type { Server } from 'http'
+import cors from 'cors'
+
 import type { wordRequest } from '../types'
 import type { MdxDictionarySettings } from '../settings'
-import { getDictPaths, lookupWeb, lookupSingle } from './lookup'
+import { getDictPaths, lookupSingle } from './lookup'
 import { folder2httpRoot } from '../config'
 import type { MDXServerPathGroup, MDXServerPath } from '../types'
+import { resizeCode } from '../resize/resizeCode'
 
 export default class MDXServer {
   app: express.Application
@@ -15,6 +18,7 @@ export default class MDXServer {
   constructor(port: number) {
     this.port = port
     this.app = express()
+    this.app.use(cors())
   }
 
   loadSetting(settings: MdxDictionarySettings) {
@@ -30,21 +34,38 @@ export default class MDXServer {
       getDictPaths(this.pathGroup[group.name])
       this.static(group.name, this.pathGroup[group.name])
     }
-    console.log(this.pathGroup)
+    settings.pathGroup = this.pathGroup
+  }
+
+  updatePath() {
+    for (const name in this.pathGroup) {
+      // clear data
+      this.pathGroup[name].dictAllPaths = []
+      this.pathGroup[name].folderIdx = []
+      this.pathGroup[name].folderPaths = []
+
+      // update data
+      getDictPaths(this.pathGroup[name])
+    }
   }
 
   start() {
     this.app.get('/word', (req, res) => {
       const reqJson = req.query as wordRequest
-      console.log(req.query)
       if ('dictPath' in reqJson && 'word' in reqJson && 'name' in reqJson) {
         const group = this.pathGroup[reqJson.name]
         const folderIdx = group.folderIdx[group.dictAllPaths.indexOf(reqJson.dictPath)]
         const HTML = lookupSingle(reqJson.word, reqJson.dictPath, reqJson.name, folderIdx)
-        console.log(HTML.documentElement.innerHTML)
-        res.send(`<html>${HTML.documentElement.innerHTML}</html>`)
+        if (HTML !== null) {
+          HTML.body.innerHTML += `<script type="text/javascript">${resizeCode}</script>`
+          // HTML.body.innerHTML += `<script src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.9/iframeResizer.min.js" defer=""></script>`
+          console.log(HTML)
+          res.send(`<!DOCTYPE html><html>${HTML.documentElement.innerHTML}</html>`)
+        } else {
+          res.send(`No such word in this dictionary!`)
+        }
       } else {
-        res.send('No such file')
+        res.send('Wrong word request')
       }
     })
 
@@ -55,7 +76,6 @@ export default class MDXServer {
 
   static(name: string, pathGroup: MDXServerPath) {
     for (let i = 0; i < pathGroup.folderPaths.length; i++) {
-      console.log(`/${folder2httpRoot}/${name}/${i}`)
       this.app.use(`/${folder2httpRoot}/${name}/${i}`, express.static(pathGroup.folderPaths[i]))
     }
   }

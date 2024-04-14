@@ -8,6 +8,7 @@ import TurndownService from 'turndown'
 import type { substituteRule } from '../types'
 import { httpPath, folder2httpRoot } from '../config'
 import type { MDXServerPath } from '../types'
+import { resizeCode } from '../resize/resizeCode'
 
 const turndownService = new TurndownService({
   headingStyle: 'atx',
@@ -46,18 +47,22 @@ export function lookupSingle(word: string, path: string, name: string, folderIdx
   // @ts-ignore
   const dict = new Mdict(path)
   const definition = dict.lookup(word).definition as string
-  const parser = new DOMParser()
-  const definition_HTML = parser.parseFromString(definition, 'text/html')
+  if (definition !== null) {
+    const parser = new DOMParser()
+    const definition_HTML = parser.parseFromString(definition, 'text/html')
 
-  definition_HTML.querySelectorAll(`link`).forEach((val) => {
-    if (val.type === 'text/css' && val.rel === 'stylesheet') {
-      val.href = `${httpPath}/${folder2httpRoot}/${name}/${folderIdx}/${basename(val.href)}`
-    }
-  })
-  definition_HTML.querySelectorAll(`script`).forEach((val) => {
-    val.src = `${httpPath}/${folder2httpRoot}/${name}/${folderIdx}/${basename(val.src)}`
-  })
-  return definition_HTML
+    definition_HTML.querySelectorAll(`link`).forEach((val) => {
+      if (val.type === 'text/css' && val.rel === 'stylesheet') {
+        val.href = `${httpPath}/${folder2httpRoot}/${name}/${folderIdx}/${basename(val.href)}`
+      }
+    })
+    definition_HTML.querySelectorAll(`script`).forEach((val) => {
+      val.src = `${httpPath}/${folder2httpRoot}/${name}/${folderIdx}/${basename(val.src)}`
+    })
+    return definition_HTML
+  } else {
+    return null
+  }
 }
 
 export function lookupWeb(word: string, serverPath: MDXServerPath) {
@@ -87,9 +92,28 @@ export function lookupWeb(word: string, serverPath: MDXServerPath) {
     })
 
     HTMLs.push(definition_HTML)
-    console.log(definition_HTML)
   }
   return HTMLs
+}
+
+export function template_view(word: string, name: string, paths: string[]) {
+  let result = `<script type="text/javascript">${resizeCode}</script> </script><h1>${word}</h1><br><hr><br>`
+
+  // let result = `<script src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.9/iframeResizer.min.js"></script>
+  // <h1>${word}</h1><br><hr><br>`
+  for (const path of paths) {
+    result += `<h2>${basename(
+      path
+    )}</h2> <br> <iframe class="word-definition-results" seamless src="http://localhost:3000/word?word=${word}&name=${name}&dictPath=${path}"}></iframe> <br> <hr>`
+  }
+  // document.querySelectorAll('.word-definition-results').forEach((val) => {
+  //   const iframe = val as HTMLIFrameElement
+  //   iframe.addEventListener('resize', () => {
+  //     console.log(iframe)
+  //     iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 'px'
+  //   })
+  // })
+  return result
 }
 
 export function lookup(
@@ -107,37 +131,37 @@ export function lookup(
   // real lookup process via js-mdict
   for (const path of dictAllPaths) {
     // @ts-ignore
-    const dict = new Mdict(path)
-    let definition = dict.lookup(word).definition as string
-    if (definition !== null) {
-      // definition = definition.replace(
-      //   /<link\s+rel=['"]stylesheet['"]\s+type=['"]text\/css['"]\s+href=['"]([^'"]+)['"]>/,
-      //   `<link rel="stylesheet" type="text/css" href="file://${dirname(path)}/$1">`
-      // )
+    // const dict = new Mdict(path)
+    // let definition = dict.lookup(word).definition as string
+    // if (definition !== null) {
+    // definition = definition.replace(
+    //   /<link\s+rel=['"]stylesheet['"]\s+type=['"]text\/css['"]\s+href=['"]([^'"]+)['"]>/,
+    //   `<link rel="stylesheet" type="text/css" href="file://${dirname(path)}/$1">`
+    // )
 
-      // definition = definition.replace(
-      //   '<link rel="stylesheet" type="text/css" href="coca.css">',
-      //   `<link rel="stylesheet" type="text/css" href="http://localhost:8081/coca.css">`
-      // )
+    // definition = definition.replace(
+    //   '<link rel="stylesheet" type="text/css" href="coca.css">',
+    //   `<link rel="stylesheet" type="text/css" href="http://localhost:8081/coca.css">`
+    // )
 
-      definition = definition.replace(
-        /<link\s+rel=['"]stylesheet['"]\s+type=['"]text\/css['"]\s+href=['"]([^'"]+)['"]>/,
-        (match, cssPath) => {
-          const cssContent = readFileSync(join(dirname(path), cssPath), 'utf-8')
-          return `<style>
-          @scope {
-            ${cssContent}
-          }</style>`
-        }
-      )
+    //   definition = definition.replace(
+    //     /<link\s+rel=['"]stylesheet['"]\s+type=['"]text\/css['"]\s+href=['"]([^'"]+)['"]>/,
+    //     (match, cssPath) => {
+    //       const cssContent = readFileSync(join(dirname(path), cssPath), 'utf-8')
+    //       return `<style>
+    //       @scope {
+    //         ${cssContent}
+    //       }</style>`
+    //     }
+    //   )
 
-      definition = definition.replace(/<script\s+src=['"]([^'"]+)['"]>/, (match, jsPath) => {
-        const jsContent = readFileSync(join(dirname(path), jsPath), 'utf-8')
-        return `<script>${jsContent}</script>`
-      })
-    }
+    //   definition = definition.replace(/<script\s+src=['"]([^'"]+)['"]>/, (match, jsPath) => {
+    //     const jsContent = readFileSync(join(dirname(path), jsPath), 'utf-8')
+    //     return `<script>${jsContent}</script>`
+    //   })
+    // }
 
-    console.log(definition)
+    // console.log(definition)
     // <link rel="stylesheet" type="text/css" href="coca.css">
     // definition.replace(/<link><\/link>/)
     //   // console.log(definition)
@@ -157,11 +181,12 @@ export function lookup(
 
     const dictBasename = basename(path)
 
-    if (definition == null) {
-      notice(`Word in dictionary ${dictBasename} does not exist`, showNotice)
-      definition = 'Word does not exist'
-    }
-    result += `<h2>${dictBasename}</h2> <br> <div class="word-definition-results">${definition}</div> <br> <hr>`
+    // if (definition == null) {
+    //   notice(`Word in dictionary ${dictBasename} does not exist`, showNotice)
+    //   definition = 'Word does not exist'
+    // }
+    // result += `<h2>${dictBasename}</h2> <br> <div class="word-definition-results">${definition}</div> <br> <hr>`
+    result += `<h2>${dictBasename}</h2> <br> <iframe class="word-definition-results" src="localhost:3000/word?word=${word}&name="}></iframe> <br> <hr>`
   }
   if (saveFormat === 'markdown') {
     const preResult = turndownService.turndown(result)
