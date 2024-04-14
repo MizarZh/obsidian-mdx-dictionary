@@ -10,16 +10,26 @@ import { SearchWordModal, BatchOutputModal, FileBatchOutputModal } from './ui/mo
 
 import { activateView, saveWordToFile, checkPathValid, obsidianRel2AbsPath } from './utils'
 
+import MDXServer from './lookup/MDXServer'
+
+import { port } from 'src/config'
+
 export default class MdxDictionary extends Plugin {
   settings: MdxDictionarySettings
   activateView: () => Promise<void>
   saveWordToFile: () => Promise<void>
+  server: MDXServer
 
   async onload() {
     await this.loadSettings()
+
     this.registerView(VIEW_TYPE_MDX_DICT, (leaf) => new MdxDictionaryView(leaf, this.settings))
 
     this.addSettingTab(new MdxDictionarySettingTab(this.app, this))
+
+    this.server = new MDXServer(port)
+    this.server.loadSetting(this.settings)
+    this.server.start()
 
     this.settings.group.forEach((elem) => {
       this.addCommand({
@@ -95,7 +105,7 @@ export default class MdxDictionary extends Plugin {
                   elem.name === groupName ? true : false
                 ),
                 group = this.settings.group[groupIdx]
-                group
+              group
               inputPath = obsidianRel2AbsPath(inputPath)
               outputPath = obsidianRel2AbsPath(outputPath)
               if (checkPathValid(inputPath) && checkPathValid(outputPath)) {
@@ -149,6 +159,7 @@ export default class MdxDictionary extends Plugin {
 
   onunload() {
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_MDX_DICT)
+    this.server.end()
   }
 
   async loadSettings() {
@@ -157,5 +168,6 @@ export default class MdxDictionary extends Plugin {
 
   async saveSettings() {
     await this.saveData(this.settings)
+    this.server.loadSetting(this.settings)
   }
 }

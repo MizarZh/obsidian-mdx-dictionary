@@ -1,18 +1,13 @@
 import Mdict from 'js-mdict'
-
 import { basename, extname, join, dirname } from 'path'
-
 import { Notice } from 'obsidian'
-
 import { readdirSync, statSync, readFileSync } from 'fs'
-
 import { convert } from 'html-to-text'
-
 import { notice, checkPathValid } from '../utils'
-
 import TurndownService from 'turndown'
-
 import type { substituteRule } from '../types'
+import { httpPath, folder2httpRoot } from '../config'
+import type { MDXServerPath } from '../types'
 
 const turndownService = new TurndownService({
   headingStyle: 'atx',
@@ -20,6 +15,82 @@ const turndownService = new TurndownService({
   bulletListMarker: '-',
   codeBlockStyle: 'fenced',
 })
+
+export function getDictPaths(serverPath: MDXServerPath) {
+  const paths = serverPath.dictPaths
+  for (let i = 0; i < paths.length; i++) {
+    const path = paths[i]
+    if (checkPathValid(path)) {
+      const stat = statSync(path)
+      if (stat.isDirectory()) {
+        serverPath.folderPaths.push(path)
+        const fileList = readdirSync(path)
+        for (const file of fileList) {
+          if (extname(file).match(/\.(mdx|mdd)/)) {
+            serverPath.dictAllPaths.push(join(path, file))
+            serverPath.folderIdx.push(i)
+          }
+        }
+      } else {
+        if (extname(path).match(/\.(mdx|mdd)/)) {
+          serverPath.dictAllPaths.push(path)
+          serverPath.folderPaths.push(dirname(path))
+          serverPath.folderIdx.push(i)
+        }
+      }
+    }
+  }
+}
+
+export function lookupSingle(word: string, path: string, name: string, folderIdx: number) {
+  // @ts-ignore
+  const dict = new Mdict(path)
+  const definition = dict.lookup(word).definition as string
+  const parser = new DOMParser()
+  const definition_HTML = parser.parseFromString(definition, 'text/html')
+
+  definition_HTML.querySelectorAll(`link`).forEach((val) => {
+    if (val.type === 'text/css' && val.rel === 'stylesheet') {
+      val.href = `${httpPath}/${folder2httpRoot}/${name}/${folderIdx}/${basename(val.href)}`
+    }
+  })
+  definition_HTML.querySelectorAll(`script`).forEach((val) => {
+    val.src = `${httpPath}/${folder2httpRoot}/${name}/${folderIdx}/${basename(val.src)}`
+  })
+  return definition_HTML
+}
+
+export function lookupWeb(word: string, serverPath: MDXServerPath) {
+  // let result = `<h1>${word}</h1><br><hr><br>`
+  const dictAllPaths = serverPath.dictAllPaths,
+    folderIdx = serverPath.folderIdx,
+    name = serverPath.name,
+    HTMLs = []
+  for (let i = 0; i < dictAllPaths.length; i++) {
+    const path = dictAllPaths[i]
+
+    // lookup process
+    // @ts-ignore
+    const dict = new Mdict(path)
+    const definition = dict.lookup(word).definition as string
+    const parser = new DOMParser()
+    const definition_HTML = parser.parseFromString(definition, 'text/html')
+
+    // replace link
+    definition_HTML.querySelectorAll(`link`).forEach((val) => {
+      if (val.type === 'text/css' && val.rel === 'stylesheet') {
+        val.href = `${httpPath}/${folder2httpRoot}/${name}/${folderIdx[i]}/${basename(val.href)}`
+      }
+    })
+    definition_HTML.querySelectorAll(`script`).forEach((val) => {
+      val.src = `${httpPath}/${folder2httpRoot}/${name}/${folderIdx[i]}/${basename(val.src)}`
+    })
+
+    HTMLs.push(definition_HTML)
+    console.log(definition_HTML)
+  }
+  return HTMLs
+}
 
 export function lookup(
   paths: Array<string>,
@@ -35,6 +106,7 @@ export function lookup(
 
   // real lookup process via js-mdict
   for (const path of dictAllPaths) {
+    // @ts-ignore
     const dict = new Mdict(path)
     let definition = dict.lookup(word).definition as string
     if (definition !== null) {
@@ -47,7 +119,6 @@ export function lookup(
       //   '<link rel="stylesheet" type="text/css" href="coca.css">',
       //   `<link rel="stylesheet" type="text/css" href="http://localhost:8081/coca.css">`
       // )
-      
 
       definition = definition.replace(
         /<link\s+rel=['"]stylesheet['"]\s+type=['"]text\/css['"]\s+href=['"]([^'"]+)['"]>/,

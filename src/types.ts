@@ -13,3 +13,21 @@ export interface MDXDictGroup {
   hotkeySearch: string
   hotkeySave: string
 }
+
+export interface wordRequest {
+  dictPath?: string
+  word?: string
+  name?: string
+}
+
+export interface MDXServerPathGroup {
+  [key: string]: MDXServerPath
+}
+
+export interface MDXServerPath {
+  name: string
+  dictPaths: string[]
+  dictAllPaths: string[]
+  folderIdx: number[]
+  folderPaths: string[]
+}

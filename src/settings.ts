@@ -11,7 +11,6 @@ import { activateView, saveWordToFile, randomStringGenerator } from './utils'
 import { SearchWordModal, NameChangeModal } from './ui/modal'
 
 export interface MdxDictionarySettings {
-  dictPaths: Array<string>
   fileSavePath: string
 
   saveFormat: string
@@ -127,8 +126,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
                 this.app.setting.openTabById('hotkeys')
                 // @ts-ignore
                 const tab = this.app.setting.activeTab
-                tab.searchInputEl.value =
-                `MDX Dictionary: Save Selected Word To File via Group <${elem.name}>`
+                tab.searchInputEl.value = `MDX Dictionary: Save Selected Word To File via Group <${elem.name}>`
                 tab.updateHotkeyVisibility()
               })
           })
@@ -289,33 +287,39 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
               })
           })
           .addExtraButton((cb) => {
-            cb.setIcon('up-chevron-glyph').setTooltip('move up').onClick(async () => {
-              if (idx > 0) {
-                const temp = group.rules[idx]
-                group.rules[idx] = group.rules[idx - 1]
-                group.rules[idx - 1] = temp
-              }
-              await this.plugin.saveSettings()
-              this.display()
-            })
+            cb.setIcon('up-chevron-glyph')
+              .setTooltip('move up')
+              .onClick(async () => {
+                if (idx > 0) {
+                  const temp = group.rules[idx]
+                  group.rules[idx] = group.rules[idx - 1]
+                  group.rules[idx - 1] = temp
+                }
+                await this.plugin.saveSettings()
+                this.display()
+              })
           })
           .addExtraButton((cb) => {
-            cb.setIcon('down-chevron-glyph').setTooltip('move down').onClick(async () => {
-              if (idx < group.rules.length - 1) {
-                const temp = group.rules[idx]
-                group.rules[idx] = group.rules[idx + 1]
-                group.rules[idx + 1] = temp
-              }
-              await this.plugin.saveSettings()
-              this.display()
-            })
+            cb.setIcon('down-chevron-glyph')
+              .setTooltip('move down')
+              .onClick(async () => {
+                if (idx < group.rules.length - 1) {
+                  const temp = group.rules[idx]
+                  group.rules[idx] = group.rules[idx + 1]
+                  group.rules[idx + 1] = temp
+                }
+                await this.plugin.saveSettings()
+                this.display()
+              })
           })
           .addExtraButton((cb) => {
-            cb.setIcon('cross').setTooltip('delete rule').onClick(async () => {
-              group.rules.splice(idx, 1)
-              await this.plugin.saveSettings()
-              this.display()
-            })
+            cb.setIcon('cross')
+              .setTooltip('delete rule')
+              .onClick(async () => {
+                group.rules.splice(idx, 1)
+                await this.plugin.saveSettings()
+                this.display()
+              })
           })
       })
     }
