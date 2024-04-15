@@ -7,11 +7,18 @@ export interface MDXDictGroup {
   name: string
   dictPaths: Array<string>
   fileSavePath: string
-  saveFormat: string
+  saveFormat: SaveFormat
+  saveTemplate: SaveTemplate
   showNotice: boolean
   rules: Array<substituteRule>
   hotkeySearch: string
   hotkeySave: string
+}
+
+export type SaveFormat = 'markdown' | 'text' | 'raw' | 'iframe'
+
+export type SaveTemplate = {
+  [key in SaveFormat]: string
 }
 
 export interface wordRequest {

@@ -35,3 +35,8 @@
 .mdx-dict-sidebar h2 {
   color: black;
 }
+
+.save-template {
+  width: 200px;
+  height: 200px;
+}

@@ -40,7 +40,7 @@ export default class MDXServer {
     settings.pathGroup = this.pathGroup
   }
 
-  updatePath() {
+  updatePath(settings: MdxDictionarySettings) {
     for (const name in this.pathGroup) {
       // clear data
       this.pathGroup[name].dictAllPaths = []
@@ -50,6 +50,7 @@ export default class MDXServer {
       // update data
       this.getDictPaths(name)
     }
+    settings.pathGroup = this.pathGroup
   }
 
   start() {

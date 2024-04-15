@@ -8,9 +8,9 @@ import { SaveFileModal } from './ui/modal'
 
 import { VIEW_TYPE_MDX_DICT } from './ui/view'
 
-import { lookup } from './lookup/lookup'
+import { lookup, lookupAll } from './lookup/lookup'
 
-import type { MDXDictGroup } from './types'
+import type { MDXDictGroup, MDXServerPath } from './types'
 
 // flag = true means notice will show
 export function notice(text: string, flag: boolean) {
@@ -33,14 +33,22 @@ export async function activateView() {
   this.app.workspace.revealLeaf(this.app.workspace.getLeavesOfType(VIEW_TYPE_MDX_DICT)[0])
 }
 
-export async function saveWordToFile(group: MDXDictGroup) {
+export async function saveWordToFile(group: MDXDictGroup, path: MDXServerPath) {
   if (checkPathValid(obsidianRel2AbsPath(group.fileSavePath))) {
     const { vault } = this.app
-    const definition = lookup(
-      group.dictPaths,
+    // const definition = lookup(
+    //   group.dictPaths,
+    //   this.settings.word,
+    //   group.saveFormat,
+    //   group.showNotice,
+    //   group.rules
+    // )
+
+    const definition = lookupAll(
       this.settings.word,
+      path,
       group.saveFormat,
-      group.showNotice,
+      group.saveTemplate[group.saveFormat],
       group.rules
     )
     try {

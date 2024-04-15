@@ -1,10 +1,12 @@
 import { App, PluginSettingTab, Setting, Editor, Notice } from 'obsidian'
 
+import type { DropdownComponent, TextAreaComponent } from 'obsidian'
+
 import type MdxDictionary from './main'
 
 import { saveFormatSetting } from './constants'
 
-import type { substituteRule, MDXDictGroup, MDXServerPathGroup } from './types'
+import type { MDXDictGroup, MDXServerPathGroup, SaveTemplate, SaveFormat } from './types'
 
 import { activateView, saveWordToFile, randomStringGenerator } from './utils'
 
@@ -22,6 +24,13 @@ export interface MdxDictionarySettings {
 
 export const MDX_DICTIONARY_DEFAULT_SETTINGS: Partial<MdxDictionarySettings> = {
   group: [],
+}
+
+const saveTemplateDefault: SaveTemplate = {
+  markdown: '#{{word}}\n\n---\n{{#for}}\n## {{basename}}\n{{result}}\n\n---\n{{/for}}',
+  iframe: '<h1>{{word}}</h1>\n<hr><br>\n{{#for}}\n <h2>{{basename}}</h2>\n{{result}}\n<hr><br>{{/for}}',
+  raw: '<h1>{{word}}</h1>\n<hr><br>\n{{#for}}\n <h2>{{basename}}</h2>\n{{result}}\n<hr><br>{{/for}}',
+  text: '{{word}}\n{{#for}}\n{{basename}}\n{{result}}\n{{/for}}',
 }
 
 export class MdxDictionarySettingTab extends PluginSettingTab {
@@ -47,8 +56,9 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
         'Refresh if something has changed in the file system (for example a new dictionary is added)'
       )
       .addExtraButton((cb) => {
-        cb.setIcon('rotate-ccw').onClick(() => {
-          this.plugin.server.updatePath()
+        cb.setIcon('rotate-ccw').onClick(async () => {
+          this.plugin.server.updatePath(this.plugin.settings)
+          await this.plugin.saveSettings()
           new Notice('Path updated!')
         })
       })
@@ -72,6 +82,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
               dictPaths: [''],
               fileSavePath: '',
               saveFormat: 'markdown',
+              saveTemplate: Object.assign({}, saveTemplateDefault),
               showNotice: true,
               rules: [],
               hotkeySearch: '',
@@ -96,6 +107,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
           console.log(ev)
           new NameChangeModal(this.app, elem.name, async (name: string) => {
             // if already exist the name
+            this.plugin.removeAllCommand()
             if (arr.some((val) => val.name === name)) {
               new Notice('Name already exist')
             } else if (name === '' || name === undefined) {
@@ -105,6 +117,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
               await this.plugin.saveSettings()
               this.display()
             }
+            this.plugin.addAllCommand()
           }).open()
         })
 
@@ -142,10 +155,10 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
               .setTooltip(`delete group ${elem.name}`)
               .onClick(async () => {
                 // remove then add
-                this.removeAllCommand()
+                this.plugin.removeAllCommand()
                 this.plugin.settings.group.splice(idx, 1)
                 await this.plugin.saveSettings()
-                this.addAllCommand()
+                this.plugin.addAllCommand()
                 this.display()
               })
           })
@@ -165,17 +178,36 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
               })
           })
 
+        let saveFormatOption: DropdownComponent, saveTemplateTextArea: TextAreaComponent
+
         new Setting(this.containerEl)
-          .setName('Save Word As markdown')
-          .setDesc('save word as markdown format rather than html')
+          .setName('Save format')
+          .setDesc('output format when saving a word')
           .addDropdown((cb) => {
-            cb.addOptions(saveFormatSetting)
-              .setValue(elem.saveFormat)
-              .onChange(async (value) => {
-                elem.saveFormat = value
-                await this.plugin.saveSettings()
-              })
+            saveFormatOption = cb
+            cb.addOptions(saveFormatSetting).setValue(elem.saveFormat)
           })
+
+        new Setting(this.containerEl)
+          .setName('Save template')
+          .setDesc('template for output text')
+          .addTextArea((cb) => {
+            saveTemplateTextArea = cb
+            cb.inputEl.addClass('save-template')
+            cb.setValue(elem.saveTemplate[elem.saveFormat]).onChange(async (value: string) => {
+              elem.saveTemplate[elem.saveFormat] = value
+              await this.plugin.saveSettings()
+            })
+          })
+
+        if (saveFormatOption !== null) {
+          saveFormatOption.onChange(async (value: SaveFormat) => {
+            elem.saveFormat = value
+            saveTemplateTextArea.setValue(elem.saveTemplate[elem.saveFormat])
+            console.log(value)
+            await this.plugin.saveSettings()
+          })
+        }
 
         new Setting(this.containerEl)
           .setName('Show Word Notices')
@@ -342,84 +374,6 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
           await this.plugin.saveSettings()
           this.display()
         })
-    })
-  }
-  // TODO add/remove single command instead of all of them
-  addAllCommand() {
-    this.plugin.settings.group.forEach((elem) => {
-      this.plugin.addCommand({
-        id: `search-word-group-${elem.name}`,
-        name: `Search Word via Group <${elem.name}>`,
-        editorCallback: async (editor: Editor) => {
-          const selection = editor.getSelection()
-          if (selection !== '') {
-            this.plugin.settings.word = selection
-            this.plugin.settings.searchGroup = elem
-            await activateView.call(this.plugin, elem)
-          } else {
-            new SearchWordModal(this.app, this.plugin.settings, elem).open()
-          }
-        },
-      })
-
-      this.plugin.addCommand({
-        id: `save-selected-word-to-file-group-${elem.name}`,
-        name: `Save Selected Word To File via Group <${elem.name}>`,
-        editorCallback: async (editor: Editor) => {
-          const selection = editor.getSelection()
-          if (selection !== '') {
-            this.plugin.settings.word = selection
-            this.plugin.settings.searchGroup = elem
-            await saveWordToFile.call(this.plugin, elem)
-          }
-        },
-      })
-    })
-  }
-
-  // addCommand(elem: MDXDictGroup) {
-  //   this.plugin.addCommand({
-  //     id: `search-word-group-${elem.name}`,
-  //     name: `Search Word via Group "${elem.name}"`,
-  //     editorCallback: async (editor: Editor) => {
-  //       const selection = editor.getSelection()
-  //       if (selection !== '') {
-  //         this.plugin.settings.word = selection
-  //         this.plugin.settings.searchGroup = elem
-  //         await activateView.call(this.plugin, elem)
-  //       } else {
-  //         new SearchWordModal(this.app, this.plugin.settings, elem).open()
-  //       }
-  //     },
-  //   })
-
-  //   this.plugin.addCommand({
-  //     id: `save-selected-word-to-file-group-${elem.name}`,
-  //     name: `Save Selected Word To File via group ${elem.name}`,
-  //     editorCallback: async (editor: Editor) => {
-  //       const selection = editor.getSelection()
-  //       if (selection !== '') {
-  //         this.plugin.settings.word = selection
-  //         this.plugin.settings.searchGroup = elem
-  //         await saveWordToFile.call(this.plugin, elem)
-  //       }
-  //     },
-  //   })
-  // }
-
-  removeAllCommand() {
-    this.plugin.settings.group.forEach((elem) => {
-      // unoffical
-
-      // @ts-ignore
-      this.app.commands.removeCommand(`${this.plugin.manifest.id}:search-word-group-${elem.name}`)
-
-      // @ts-ignore
-      this.app.commands.removeCommand(
-        `${this.plugin.manifest.id}:save-selected-word-to-file-group-${elem.name}`
-      )
-      // @ts-ignore
-      // console.log(this.app.commands)
     })
   }
 }

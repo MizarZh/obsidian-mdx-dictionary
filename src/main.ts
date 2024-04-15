@@ -31,99 +31,7 @@ export default class MdxDictionary extends Plugin {
     this.server.loadSetting(this.settings)
     this.server.start()
 
-    this.settings.group.forEach((elem) => {
-      this.addCommand({
-        id: `search-word-group-${elem.name}`,
-        name: `Search Word via Group <${elem.name}>`,
-        editorCallback: async (editor: Editor) => {
-          const selection = editor.getSelection()
-          if (selection !== '') {
-            this.settings.word = selection
-            this.settings.searchGroup = elem
-            await activateView.call(this, elem)
-          } else {
-            new SearchWordModal(this.app, this.settings, elem).open()
-          }
-        },
-      })
-
-      this.addCommand({
-        id: `save-selected-word-to-file-group-${elem.name}`,
-        name: `Save Selected Word To File via group <${elem.name}>`,
-        editorCallback: async (editor: Editor) => {
-          const selection = editor.getSelection()
-          if (selection !== '') {
-            this.settings.word = selection
-            this.settings.searchGroup = elem
-            await saveWordToFile.call(this, elem)
-          }
-        },
-      })
-    })
-
-    this.addCommand({
-      id: 'batch-output-to-files',
-      name: `Batch Output Words to Files`,
-      callback: async () => {
-        if (this.settings.group.length !== 0) {
-          new BatchOutputModal(
-            this.app,
-            this.settings.group.map((elem) => elem.name),
-            (words: Array<string>, groupName: string, path: string) => {
-              const groupIdx = this.settings.group.findIndex((elem) =>
-                  elem.name === groupName ? true : false
-                ),
-                group = this.settings.group[groupIdx]
-              path = obsidianRel2AbsPath(path)
-              this.settings.searchGroup = group
-              if (checkPathValid(path)) {
-                words.forEach(async (elem) => {
-                  this.settings.word = elem
-                  await saveWordToFile.call(this, group)
-                })
-              } else {
-                new Notice('Invalid save file path')
-              }
-            }
-          ).open()
-        } else {
-          new Notice('No group has created')
-        }
-      },
-    })
-
-    this.addCommand({
-      id: 'batch-output-to-files-via-file',
-      name: `Batch Output Words to Files with Word List selected`,
-      callback: async () => {
-        if (this.settings.group.length !== 0) {
-          new FileBatchOutputModal(
-            this.app,
-            this.settings.group.map((elem) => elem.name),
-            (groupName: string, inputPath: string, outputPath: string) => {
-              const groupIdx = this.settings.group.findIndex((elem) =>
-                  elem.name === groupName ? true : false
-                ),
-                group = this.settings.group[groupIdx]
-              group
-              inputPath = obsidianRel2AbsPath(inputPath)
-              outputPath = obsidianRel2AbsPath(outputPath)
-              if (checkPathValid(inputPath) && checkPathValid(outputPath)) {
-                // TODO read words from vault
-                // words.forEach(async (elem) => {
-                //   this.settings.word = elem
-                //   await saveWordToFile.call(this, group)
-                // })
-              } else {
-                new Notice('Invalid path')
-              }
-            }
-          )
-        } else {
-          new Notice('No group has created')
-        }
-      },
-    })
+    this.addAllCommand()
 
     // this.activateView = activateView.bind(this)
     // this.saveWordToFile = saveWordToFile.bind(this)
@@ -169,5 +77,117 @@ export default class MdxDictionary extends Plugin {
   async saveSettings() {
     await this.saveData(this.settings)
     this.server.loadSetting(this.settings)
+  }
+
+  addAllCommand() {
+    this.settings.group.forEach((elem) => {
+      this.addCommand({
+        id: `search-word-group-${elem.name}`,
+        name: `Search Word via Group <${elem.name}>`,
+        editorCallback: async (editor: Editor) => {
+          const selection = editor.getSelection()
+          if (selection !== '') {
+            this.settings.word = selection
+            this.settings.searchGroup = elem
+            await activateView.call(this, elem)
+          } else {
+            new SearchWordModal(this.app, this.settings, elem).open()
+          }
+        },
+      })
+
+      this.addCommand({
+        id: `save-selected-word-to-file-group-${elem.name}`,
+        name: `Save Selected Word To File via group <${elem.name}>`,
+        editorCallback: async (editor: Editor) => {
+          const selection = editor.getSelection()
+          if (selection !== '') {
+            this.settings.word = selection
+            this.settings.searchGroup = elem
+            await saveWordToFile.call(this, elem, this.settings.pathGroup[elem.name])
+          }
+        },
+      })
+    })
+
+    // this.addCommand({
+    //   id: 'batch-output-to-files',
+    //   name: `Batch Output Words to Files`,
+    //   callback: async () => {
+    //     if (this.settings.group.length !== 0) {
+    //       new BatchOutputModal(
+    //         this.app,
+    //         this.settings.group.map((elem) => elem.name),
+    //         (words: Array<string>, groupName: string, path: string) => {
+    //           const groupIdx = this.settings.group.findIndex((elem) =>
+    //               elem.name === groupName ? true : false
+    //             ),
+    //             group = this.settings.group[groupIdx]
+    //           path = obsidianRel2AbsPath(path)
+    //           this.settings.searchGroup = group
+    //           if (checkPathValid(path)) {
+    //             words.forEach(async (elem) => {
+    //               this.settings.word = elem
+    //               await saveWordToFile.call(this, group)
+    //             })
+    //           } else {
+    //             new Notice('Invalid save file path')
+    //           }
+    //         }
+    //       ).open()
+    //     } else {
+    //       new Notice('No group has created')
+    //     }
+    //   },
+    // })
+
+    // this.addCommand({
+    //   id: 'batch-output-to-files-via-file',
+    //   name: `Batch Output Words to Files with Word List selected`,
+    //   callback: async () => {
+    //     if (this.settings.group.length !== 0) {
+    //       new FileBatchOutputModal(
+    //         this.app,
+    //         this.settings.group.map((elem) => elem.name),
+    //         (groupName: string, inputPath: string, outputPath: string) => {
+    //           const groupIdx = this.settings.group.findIndex((elem) =>
+    //               elem.name === groupName ? true : false
+    //             ),
+    //             group = this.settings.group[groupIdx]
+    //           group
+    //           inputPath = obsidianRel2AbsPath(inputPath)
+    //           outputPath = obsidianRel2AbsPath(outputPath)
+    //           if (checkPathValid(inputPath) && checkPathValid(outputPath)) {
+    //             // TODO read words from vault
+    //             // words.forEach(async (elem) => {
+    //             //   this.settings.word = elem
+    //             //   await saveWordToFile.call(this, group)
+    //             // })
+    //           } else {
+    //             new Notice('Invalid path')
+    //           }
+    //         }
+    //       )
+    //     } else {
+    //       new Notice('No group has created')
+    //     }
+    //   },
+    // })
+  }
+
+  removeAllCommand() {
+    this.settings.group.forEach((elem) => {
+      // unoffical
+
+      // @ts-ignore
+      this.app.commands.removeCommand(`${this.plugin.manifest.id}:search-word-group-${elem.name}`)
+
+      // @ts-ignore
+      this.app.commands.removeCommand(
+        `${this.manifest.id}:save-selected-word-to-file-group-${elem.name}`
+      )
+      // @ts-ignore
+      // console.log(this.app.commands)
+    })
   }
 }
