@@ -5,9 +5,8 @@ import { readdirSync, statSync, readFileSync } from 'fs'
 import { convert } from 'html-to-text'
 import { notice, checkPathValid } from '../utils'
 import TurndownService from 'turndown'
-import type { substituteRule } from '../types'
-import { httpPath, folder2httpRoot } from '../config'
-import type { MDXServerPath } from '../types'
+import type { substituteRule, MDXServerPath } from '../types'
+import { httpPath, folder2httpRoot, word2httpRoot } from '../config'
 import { resizeCode } from '../resize/resizeCode'
 
 const turndownService = new TurndownService({
@@ -17,33 +16,7 @@ const turndownService = new TurndownService({
   codeBlockStyle: 'fenced',
 })
 
-export function getDictPaths(serverPath: MDXServerPath) {
-  const paths = serverPath.dictPaths
-  for (let i = 0; i < paths.length; i++) {
-    const path = paths[i]
-    if (checkPathValid(path)) {
-      const stat = statSync(path)
-      if (stat.isDirectory()) {
-        serverPath.folderPaths.push(path)
-        const fileList = readdirSync(path)
-        for (const file of fileList) {
-          if (extname(file).match(/\.(mdx|mdd)/)) {
-            serverPath.dictAllPaths.push(join(path, file))
-            serverPath.folderIdx.push(i)
-          }
-        }
-      } else {
-        if (extname(path).match(/\.(mdx|mdd)/)) {
-          serverPath.dictAllPaths.push(path)
-          serverPath.folderPaths.push(dirname(path))
-          serverPath.folderIdx.push(i)
-        }
-      }
-    }
-  }
-}
-
-export function lookupSingle(word: string, path: string, name: string, folderIdx: number) {
+export function lookupWebSingle(word: string, path: string, name: string, folderIdx: number) {
   // @ts-ignore
   const dict = new Mdict(path)
   const definition = dict.lookup(word).definition as string
@@ -59,41 +32,93 @@ export function lookupSingle(word: string, path: string, name: string, folderIdx
     definition_HTML.querySelectorAll(`script`).forEach((val) => {
       val.src = `${httpPath}/${folder2httpRoot}/${name}/${folderIdx}/${basename(val.src)}`
     })
-    return definition_HTML
+    return definition_HTML.documentElement.innerHTML
   } else {
     return null
   }
 }
 
-export function lookupWeb(word: string, serverPath: MDXServerPath) {
-  // let result = `<h1>${word}</h1><br><hr><br>`
+export function lookupWebAll(word: string, serverPath: MDXServerPath) {
   const dictAllPaths = serverPath.dictAllPaths,
     folderIdx = serverPath.folderIdx,
     name = serverPath.name,
     HTMLs = []
   for (let i = 0; i < dictAllPaths.length; i++) {
-    const path = dictAllPaths[i]
-
-    // lookup process
-    // @ts-ignore
-    const dict = new Mdict(path)
-    const definition = dict.lookup(word).definition as string
-    const parser = new DOMParser()
-    const definition_HTML = parser.parseFromString(definition, 'text/html')
-
-    // replace link
-    definition_HTML.querySelectorAll(`link`).forEach((val) => {
-      if (val.type === 'text/css' && val.rel === 'stylesheet') {
-        val.href = `${httpPath}/${folder2httpRoot}/${name}/${folderIdx[i]}/${basename(val.href)}`
-      }
-    })
-    definition_HTML.querySelectorAll(`script`).forEach((val) => {
-      val.src = `${httpPath}/${folder2httpRoot}/${name}/${folderIdx[i]}/${basename(val.src)}`
-    })
-
-    HTMLs.push(definition_HTML)
+    HTMLs.push(lookupWebSingle(word, dictAllPaths[i], name, folderIdx[i]))
   }
   return HTMLs
+}
+
+export function lookupRawSingle(word: string, path: string) {
+  // @ts-ignore
+  const dict = new Mdict(path)
+  const definition = dict.lookup(word).definition as string
+  if (definition !== null) {
+    return definition
+  } else {
+    return null
+  }
+}
+
+export function lookupRawAll(word: string, serverPath: MDXServerPath) {
+  const dictAllPaths = serverPath.dictAllPaths,
+    texts = []
+  for (let i = 0; i < dictAllPaths.length; i++) {
+    texts.push(lookupRawSingle(word, dictAllPaths[i]))
+  }
+  return texts
+}
+
+// {{word}} - word
+// {{date}}
+export function lookupAll(
+  word: string,
+  serverPath: MDXServerPath,
+  saveFormat: string,
+  substituteSettings: Array<substituteRule>,
+  template: string
+) {
+  if (saveFormat === 'markdown') {
+    const results = lookupRawAll(word, serverPath)
+    results.forEach((val) => turndownService.turndown(val))
+    const preResult = templateReplaceAll(template, word, results, serverPath)
+    return substitute(preResult, substituteSettings)
+  } else if (saveFormat === 'text') {
+    const results = lookupRawAll(word, serverPath)
+    results.forEach((val) => convert(val))
+    const preResult = templateReplaceAll(template, word, results, serverPath)
+    return substitute(preResult, substituteSettings)
+  } else if (saveFormat === 'iframe') {
+    const results = lookupWebAll(word, serverPath)
+    let preResult = templateReplaceAll(template, word, results, serverPath)
+    preResult += `<script type="text/javascript">${resizeCode}</script>`
+    return substitute(preResult, substituteSettings)
+  } else if (saveFormat === 'raw') {
+    const results = lookupRawAll(word, serverPath)
+    const preResult = templateReplaceAll(template, word, results, serverPath)
+    return substitute(preResult, substituteSettings)
+  }
+  return ''
+}
+
+function templateReplaceAll(template: string, word: string, results: string[], serverPath: MDXServerPath) {
+  template = template
+    .replaceAll('{{word}}', word)
+    .replaceAll('{{date}}', () => new Date().toLocaleDateString())
+
+  // Substitution of {{#for ...}}
+  template = template.replaceAll(/{{#for}}([\s\S]*?){{\/for}}/g, (match, content) => {
+    let forResult = ''
+    for (let i = 0; i < results.length; i++) {
+      let replacedContent = content
+      replacedContent = replacedContent
+        .replaceAll('{{result}}', results[i])
+        .replaceAll('{{path}}', serverPath.dictAllPaths[i])
+      forResult += replacedContent
+    }
+    return forResult
+  })
+  return template
 }
 
 export function template_view(word: string, name: string, paths: string[]) {
@@ -104,15 +129,8 @@ export function template_view(word: string, name: string, paths: string[]) {
   for (const path of paths) {
     result += `<h2>${basename(
       path
-    )}</h2> <br> <iframe class="word-definition-results" seamless src="http://localhost:3000/word?word=${word}&name=${name}&dictPath=${path}"}></iframe> <br> <hr>`
+    )}</h2> <br> <iframe class="word-definition-results" seamless src="${httpPath}/${word2httpRoot}?word=${word}&name=${name}&dictPath=${path}"}></iframe> <br> <hr>`
   }
-  // document.querySelectorAll('.word-definition-results').forEach((val) => {
-  //   const iframe = val as HTMLIFrameElement
-  //   iframe.addEventListener('resize', () => {
-  //     console.log(iframe)
-  //     iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 'px'
-  //   })
-  // })
   return result
 }
 

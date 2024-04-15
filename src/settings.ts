@@ -11,18 +11,13 @@ import { activateView, saveWordToFile, randomStringGenerator } from './utils'
 import { SearchWordModal, NameChangeModal } from './ui/modal'
 
 export interface MdxDictionarySettings {
-  fileSavePath: string
-
-  saveFormat: string
-  transformRules: Array<substituteRule>
-
-  group: Array<MDXDictGroup>
-  pathGroup: MDXServerPathGroup
+  group: Array<MDXDictGroup> // Dictionary groups
+  pathGroup: MDXServerPathGroup // Path groups (object) organized by dictionary name
 
   showWordNonexistenceNotice: boolean
 
-  word: string
-  searchGroup: MDXDictGroup
+  word: string // current word
+  searchGroup: MDXDictGroup // current dictionary group
 }
 
 export const MDX_DICTIONARY_DEFAULT_SETTINGS: Partial<MdxDictionarySettings> = {

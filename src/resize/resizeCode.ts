@@ -1,3 +1,4 @@
+// this code comes from https://raw.githubusercontent.com/davidjbradshaw/iframe-resizer/master/js/iframeResizer.min.js
 export const resizeCode = `
 /*! iFrame Resizer (iframeSizer.contentWindow.min.js) - v4.3.9 - 2023-11-10
 *  Desc: Include this file in any page being loaded into an iframe
