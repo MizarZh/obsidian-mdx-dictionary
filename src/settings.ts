@@ -8,9 +8,9 @@ import { saveFormatSetting } from './constants'
 
 import type { MDXDictGroup, MDXServerPathGroup, SaveTemplate, SaveFormat } from './types'
 
-import { activateView, saveWordToFile, randomStringGenerator } from './utils'
+import { randomStringGenerator } from './utils'
 
-import { SearchWordModal, NameChangeModal } from './ui/modal'
+import { NameChangeModal } from './ui/modal'
 
 export interface MdxDictionarySettings {
   group: Array<MDXDictGroup> // Dictionary groups
@@ -28,7 +28,8 @@ export const MDX_DICTIONARY_DEFAULT_SETTINGS: Partial<MdxDictionarySettings> = {
 
 const saveTemplateDefault: SaveTemplate = {
   markdown: '#{{word}}\n\n---\n{{#for}}\n## {{basename}}\n{{result}}\n\n---\n{{/for}}',
-  iframe: '<h1>{{word}}</h1>\n<hr><br>\n{{#for}}\n <h2>{{basename}}</h2>\n{{result}}\n<hr><br>{{/for}}',
+  iframe:
+    '<h1>{{word}}</h1>\n<hr><br>\n{{#for}}\n <h2>{{basename}}</h2>\n{{result}}\n<hr><br>{{/for}}',
   raw: '<h1>{{word}}</h1>\n<hr><br>\n{{#for}}\n <h2>{{basename}}</h2>\n{{result}}\n<hr><br>{{/for}}',
   text: '{{word}}\n{{#for}}\n{{basename}}\n{{result}}\n{{/for}}',
 }
@@ -75,7 +76,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
           .setCta()
           .onClick(async () => {
             // remove then add
-            this.removeAllCommand()
+            this.plugin.removeAllCommand()
             const name = randomStringGenerator()
             this.plugin.settings.group.unshift({
               name,
@@ -89,7 +90,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
               hotkeySave: '',
             })
             await this.plugin.saveSettings()
-            this.addAllCommand()
+            this.plugin.addAllCommand()
             this.display()
           })
       })

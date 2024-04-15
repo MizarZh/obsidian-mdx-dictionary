@@ -4,15 +4,16 @@ import type { MdxDictionarySettings } from '../settings'
 
 export const VIEW_TYPE_MDX_DICT = 'mdx-dict-view'
 
-import { lookup, template_view } from '../lookup/lookup'
+import { lookup, lookupAll, lookupWebSeparated } from '../lookup/lookup'
 
 // import iframeResizer from 'iframe-resizer/js/iframeResizer'
-import { iframeResizer } from 'iframe-resizer'
+import { iframeResizer, type IFrameComponent } from 'iframe-resizer'
 
 export class MdxDictionaryView extends ItemView {
   private settings: MdxDictionarySettings
   private root: HTMLDivElement
   private container: Element
+  private iframeResize: IFrameComponent[]
 
   async linkOnclick(ev: MouseEvent) {
     ev.preventDefault()
@@ -44,7 +45,11 @@ export class MdxDictionaryView extends ItemView {
 
     root.addEventListener('click', this.linkOnclick)
   }
-  async onClose() {}
+  async onClose() {
+    for (const x of this.iframeResize) {
+      x.iFrameResizer.close()
+    }
+  }
 
   update(root: HTMLDivElement, conatiner: Element) {
     conatiner.scrollTop = 0
@@ -55,14 +60,15 @@ export class MdxDictionaryView extends ItemView {
     //   this.settings.searchGroup.showNotice,
     //   []
     // )
-    root.innerHTML = template_view(
+    root.innerHTML = lookupWebSeparated(
       this.settings.word,
-      this.settings.searchGroup.name,
-      this.settings.pathGroup[this.settings.searchGroup.name].dictAllPaths
+      this.settings.pathGroup[this.settings.searchGroup.name],
+      this.settings.searchGroup.saveTemplate['iframe'],
+      'word-definition-results'
     )
 
     // set iframe resizer
-    const iframeResize = iframeResizer(
+    this.iframeResize = iframeResizer(
       {
         log: false,
       },
@@ -70,7 +76,7 @@ export class MdxDictionaryView extends ItemView {
     )
     // if width of div changed, then resize every iframe
     new ResizeObserver(() => {
-      for (const x of iframeResize) {
+      for (const x of this.iframeResize) {
         x.iFrameResizer.resize()
       }
     }).observe(root)

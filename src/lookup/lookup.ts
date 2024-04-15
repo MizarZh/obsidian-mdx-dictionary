@@ -91,9 +91,7 @@ export function lookupAll(
     const preResult = templateReplaceAll(template, word, results, serverPath)
     return substitute(preResult, substituteSettings)
   } else if (saveFormat === 'iframe') {
-    const results = lookupWebAll(word, serverPath)
-    let preResult = templateReplaceAll(template, word, results, serverPath)
-    preResult += `<script type="text/javascript">${resizeCode}</script>`
+    const preResult = lookupWebSeparated(word, serverPath, template, 'word-definition-embed')
     return substitute(preResult, substituteSettings)
   } else if (saveFormat === 'raw') {
     const results = lookupRawAll(word, serverPath)
@@ -101,6 +99,25 @@ export function lookupAll(
     return substitute(preResult, substituteSettings)
   }
   return ''
+}
+
+export function lookupWebSeparated(
+  word: string,
+  serverPath: MDXServerPath,
+  template: string,
+  className: string,
+  iframeResize = false
+) {
+  const results = []
+  for (const path of serverPath.dictAllPaths) {
+    results.push(
+      `<iframe class="${className}" seamless src="${httpPath}/${word2httpRoot}?word=${word}&name=${serverPath.name}&dictPath=${path}"></iframe>`
+    )
+  }
+  let result = templateReplaceAll(template, word, results, serverPath)
+  if (iframeResize === true)
+    result = '<script type="text/javascript">${resizeCode}</script>' + result
+  return result
 }
 
 function templateReplaceAll(
@@ -130,7 +147,7 @@ function templateReplaceAll(
 }
 
 export function template_view(word: string, name: string, paths: string[]) {
-  let result = `<script type="text/javascript">${resizeCode}</script> </script><h1>${word}</h1><br><hr><br>`
+  let result = ` </script><h1>${word}</h1><br><hr><br>`
 
   // let result = `<script src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.9/iframeResizer.min.js"></script>
   // <h1>${word}</h1><br><hr><br>`
