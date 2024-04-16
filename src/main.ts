@@ -32,37 +32,6 @@ export default class MdxDictionary extends Plugin {
     this.server.start()
 
     this.addAllCommand()
-
-    // this.activateView = activateView.bind(this)
-    // this.saveWordToFile = saveWordToFile.bind(this)
-
-    // this.addCommand({
-    //   id: 'search-word',
-    //   name: 'Search Word',
-    //   editorCallback: async (editor: Editor) => {
-    //     const selection = editor.getSelection()
-    //     if (selection !== '') {
-    //       this.settings.word = selection
-    //       await this.activateView()
-    //     } else {
-    //       new SearchWordModal(this.app, this.settings).open()
-    //     }
-    //   },
-    // })
-
-    // this.addCommand({
-    //   id: 'save-selected-word-to-file',
-    //   name: 'Save Selected Word To File',
-    //   editorCallback: async (editor: Editor) => {
-    //     const selection = editor.getSelection()
-    //     if (selection !== '') {
-    //       this.settings.word = selection
-    //       await this.saveWordToFile()
-    //     }
-    //   },
-    // })
-    // @ts-ignore
-    // console.log(this.app.commands)
   }
 
   onunload() {
@@ -180,7 +149,7 @@ export default class MdxDictionary extends Plugin {
       // unoffical
 
       // @ts-ignore
-      this.app.commands.removeCommand(`${this.plugin.manifest.id}:search-word-group-${elem.name}`)
+      this.app.commands.removeCommand(`${this.manifest.id}:search-word-group-${elem.name}`)
 
       // @ts-ignore
       this.app.commands.removeCommand(
