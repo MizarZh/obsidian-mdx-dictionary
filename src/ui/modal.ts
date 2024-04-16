@@ -69,12 +69,13 @@ interface SaveFileOptions {
   operation: string
 }
 
-export class SaveFileModal extends SuggestModal<SaveFileOptions> {
+export class SaveFileSuggestModal extends SuggestModal<SaveFileOptions> {
   onSubmit: (result: string, vault: Vault) => void
 
-  constructor(app: App, onSubmit: (result: string, vault: Vault) => void) {
+  constructor(app: App, filename: string, onSubmit: (result: string, vault: Vault) => void) {
     super(app)
     this.onSubmit = onSubmit
+    this.setPlaceholder(`Choose an operation on file "${filename}"`)
   }
 
   getSuggestions(query: string): SaveFileOptions[] {
@@ -93,7 +94,7 @@ export class SaveFileModal extends SuggestModal<SaveFileOptions> {
   }
 }
 
-export class NameChangePrompt extends Modal {
+export class NameChangeModal extends Modal {
   originalName: string
   name: string
   onSubmit: (name: string) => void
@@ -107,7 +108,7 @@ export class NameChangePrompt extends Modal {
     const { contentEl } = this
     contentEl.createEl('h2', { text: `Change name for group ${this.originalName}` })
 
-    contentEl.addEventListener('keydown', async (e) => {
+    contentEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         this.onSubmit(this.name)
         this.close()
@@ -129,3 +130,129 @@ export class NameChangePrompt extends Modal {
 // export class DeleteConfirm extends Modal {
 //   onSubmit: (name: string) => void
 // }
+
+export class BatchOutputModal extends Modal {
+  private words: Array<string>
+  private text: string
+  private groupNames: Array<string>
+  private groupName: string
+  private path: string
+  onSubmit: (words: Array<string>, groupName: string, path: string) => void
+
+  constructor(
+    app: App,
+    groupNames: Array<string>,
+    onSubmit: (words: Array<string>, groupName: string, path: string) => void
+  ) {
+    super(app)
+    this.groupNames = groupNames
+    this.onSubmit = onSubmit
+  }
+
+  // TODO invalid notation in filesystem
+  // \ / : * ? " < > | in windows
+  onOpen() {
+    const { contentEl } = this
+    contentEl.createEl('h1', { text: 'Fill in words separated by ","' })
+
+    contentEl.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        if (this.text === '') {
+          new Notice('Empty word input!')
+        } else {
+          this.onSubmit(this.words, this.groupName, this.path)
+        }
+        this.close()
+      }
+    })
+
+    new Setting(contentEl).setName('group').addDropdown((cb) => {
+      this.groupNames.forEach((elem) => {
+        cb.addOption(elem, elem)
+      })
+      this.groupName = this.groupNames[0]
+      cb.setValue(this.groupNames[0]).onChange((value) => {
+        this.groupName = value
+      })
+    })
+
+    new Setting(contentEl).setName('words').addText((text) => {
+      text.inputEl.addClass('full-width-input')
+      text.onChange((value) => {
+        this.text = value
+        this.words = value.split(',')
+      })
+    })
+
+    new Setting(contentEl).setName('path').addText((text) => {
+      text.inputEl.addClass('full-width-input')
+      text.onChange((value) => {
+        this.path = value
+      })
+    })
+  }
+  onClose() {
+    const { contentEl } = this
+    contentEl.empty()
+  }
+}
+
+export class FileBatchOutputModal extends Modal {
+  private groupNames: Array<string>
+  private groupName: string
+  private outputPath: string
+  private inputPath: string
+  onSubmit: (groupName: string, inputPath: string, outputPath: string) => void
+
+  constructor(
+    app: App,
+    groupNames: Array<string>,
+    onSubmit: (groupName: string, inputPath: string, outputPath: string) => void
+  ) {
+    super(app)
+    this.groupNames = groupNames
+    this.onSubmit = onSubmit
+  }
+
+  // TODO invalid notation in filesystem, regexp pattern for words
+  // \ / : * ? " < > | in windows
+  onOpen() {
+    const { contentEl } = this
+    contentEl.createEl('h1', { text: 'Batch Word (from file) Output' })
+
+    contentEl.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter') {
+        this.onSubmit(this.groupName, this.inputPath, this.outputPath)
+        this.close()
+      }
+    })
+
+    new Setting(contentEl).setName('group').addDropdown((cb) => {
+      this.groupNames.forEach((elem) => {
+        cb.addOption(elem, elem)
+      })
+      this.groupName = this.groupNames[0]
+      cb.setValue(this.groupNames[0]).onChange((value) => {
+        this.groupName = value
+      })
+    })
+
+    new Setting(contentEl).setName('input path').addText((text) => {
+      text.inputEl.addClass('full-width-input')
+      text.onChange((value) => {
+        this.inputPath = value
+      })
+    })
+
+    new Setting(contentEl).setName('output path').addText((text) => {
+      text.inputEl.addClass('full-width-input')
+      text.onChange((value) => {
+        this.outputPath = value
+      })
+    })
+  }
+  onClose() {
+    const { contentEl } = this
+    contentEl.empty()
+  }
+}

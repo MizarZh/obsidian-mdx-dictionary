@@ -1,3 +1,5 @@
+import type { SaveFormat } from './types'
+
 export const suggestSaveFile = [
   {
     title: 'Append to the file',
@@ -13,8 +15,9 @@ export const suggestSaveFile = [
   },
 ]
 
-export const saveFormatSetting: Record<string, string> = {
-  html: 'HTML',
+export const saveFormatSetting: Record<SaveFormat, string> = {
   markdown: 'Markdown',
   text: 'Text',
+  raw: 'Raw',
+  iframe: 'iframe',
 }

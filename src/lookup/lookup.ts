@@ -1,18 +1,11 @@
 import Mdict from 'js-mdict'
-
-import { basename, extname, join } from 'path'
-
-import { Notice } from 'obsidian'
-
-import { readdirSync, statSync } from 'fs'
-
+import { basename, extname, join, dirname } from 'path'
 import { convert } from 'html-to-text'
-
-import { notice } from '../utils'
-
+import { notice, checkPathValid } from '../utils'
 import TurndownService from 'turndown'
-
-import type { substituteRule } from '../types'
+import type { substituteRule, MDXServerPath, SaveFormat } from '../types'
+import { httpPath, folder2httpRoot, word2httpRoot } from '../config'
+import { saveTemplateDefault } from '../settings'
 
 const turndownService = new TurndownService({
   headingStyle: 'atx',
@@ -21,83 +14,145 @@ const turndownService = new TurndownService({
   codeBlockStyle: 'fenced',
 })
 
-export function lookup(
-  paths: Array<string>,
-  word: string,
-  saveFormat: string,
-  showNotice: boolean,
-  substituteSettings: Array<substituteRule>
-): string {
-  let result = `<h1>${word}</h1><br><hr><br>`
+export function lookupWebSingle(word: string, path: string, name: string, folderIdx: number) {
+  // @ts-ignore
+  const dict = new Mdict(path)
+  const definition = dict.lookup(word).definition as string
+  if (definition !== null) {
+    const parser = new DOMParser()
+    const definition_HTML = parser.parseFromString(definition, 'text/html')
 
-  const dictAllPaths: Array<string> = []
-  for (let i = 0; i < paths.length; i++) {
-    const path = paths[i]
-    try {
-      statSync(path)
-    } catch (e) {
-      new Notice(`Invalid dictionary path on dict / folder path ${i + 1}`)
-      return ''
-    }
-    const stat = statSync(path)
-
-    // if path points to a folder
-    if (stat.isDirectory()) {
-      const fileList = readdirSync(path)
-      for (const file of fileList) {
-        if (extname(file).match(/\.(mdx|mdd)/)) dictAllPaths.push(join(path, file))
+    definition_HTML.querySelectorAll(`link`).forEach((val) => {
+      if (val.type === 'text/css' && val.rel === 'stylesheet') {
+        val.href = `${httpPath}/${folder2httpRoot}/${name}/${folderIdx}/${basename(val.href)}`
       }
-      if (dictAllPaths.length === 0) {
-        new Notice('No mdx/mdd files in the chosen directory')
-        return ''
-      }
-      // if path points to a file
-    } else {
-      if (extname(path).match(/\.(mdx|mdd)/)) dictAllPaths.push(path)
-      else {
-        new Notice('Specified file is not a mdx/mdd file')
-        return ''
-      }
-    }
+    })
+    definition_HTML.querySelectorAll(`script`).forEach((val) => {
+      val.src = `${httpPath}/${folder2httpRoot}/${name}/${folderIdx}/${basename(val.src)}`
+    })
+    return definition_HTML.documentElement.innerHTML
+  } else {
+    notice(`No word found in ${basename(path)}`, true)
+    return '<p>No such word!</p>'
   }
+}
 
-  // real lookup process via js-mdict
-  for (const path of dictAllPaths) {
-    const dict = new Mdict(path)
-    let definition = dict.lookup(word).definition
-    const dictBasename = basename(path)
+export function lookupWebAll(word: string, serverPath: MDXServerPath) {
+  const dictAllPaths = serverPath.dictAllPaths,
+    folderIdx = serverPath.folderIdx,
+    name = serverPath.name,
+    HTMLs = []
+  for (let i = 0; i < dictAllPaths.length; i++) {
+    HTMLs.push(lookupWebSingle(word, dictAllPaths[i], name, folderIdx[i]))
+  }
+  return HTMLs
+}
 
-    if (definition == null) {
-      notice(`Word in dictionary ${dictBasename} does not exist`, showNotice)
-      definition = 'Word does not exist'
-    }
-    result += `<h2>${dictBasename}</h2> <br>` + definition + '<br> <hr>'
+export function lookupRawSingle(word: string, path: string) {
+  // @ts-ignore
+  const dict = new Mdict(path)
+  const definition = dict.lookup(word).definition as string
+  if (definition !== null) {
+    return definition
+  } else {
+    notice(`No word found in ${basename(path)}`, true)
+    return 'No such word!'
+  }
+}
+
+export function lookupRawAll(word: string, serverPath: MDXServerPath) {
+  const dictAllPaths = serverPath.dictAllPaths,
+    texts = []
+  for (let i = 0; i < dictAllPaths.length; i++) {
+    texts.push(lookupRawSingle(word, dictAllPaths[i]))
+  }
+  return texts
+}
+
+export function lookupWebSeparated(
+  word: string,
+  serverPath: MDXServerPath,
+  template: string,
+  className: string,
+  iframeResize = false
+) {
+  const results = []
+  for (const path of serverPath.dictAllPaths) {
+    results.push(
+      `<iframe class="${className}" seamless src="${httpPath}/${word2httpRoot}?word=${word}&name=${serverPath.name}&dictPath=${path}"></iframe>`
+    )
+  }
+  let result = templateReplaceAll(template, word, results, serverPath)
+  if (iframeResize === true)
+    result = '<script type="text/javascript">${resizeCode}</script>' + result
+  return result
+}
+
+export function lookupAll(
+  word: string,
+  serverPath: MDXServerPath,
+  saveFormat: SaveFormat,
+  template: string,
+  substituteSettings: Array<substituteRule>
+) {
+  if (template.trim() === '') {
+    template = saveTemplateDefault[saveFormat]
   }
   if (saveFormat === 'markdown') {
-    const preResult = turndownService.turndown(result)
+    let results = lookupRawAll(word, serverPath)
+    results = results.map((val) => turndownService.turndown(val))
+    const preResult = templateReplaceAll(template, word, results, serverPath)
     return substitute(preResult, substituteSettings)
   } else if (saveFormat === 'text') {
-    const preResult = convert(result)
+    let results = lookupRawAll(word, serverPath)
+    results = results.map((val) => convert(val))
+    const preResult = templateReplaceAll(template, word, results, serverPath)
+    return substitute(preResult, substituteSettings)
+  } else if (saveFormat === 'iframe') {
+    const preResult = lookupWebSeparated(word, serverPath, template, 'word-definition-embed')
+    return substitute(preResult, substituteSettings)
+  } else if (saveFormat === 'raw') {
+    const results = lookupRawAll(word, serverPath)
+    const preResult = templateReplaceAll(template, word, results, serverPath)
     return substitute(preResult, substituteSettings)
   }
-  return result
+  return ''
+}
+
+function templateReplaceAll(
+  template: string,
+  word: string,
+  results: string[],
+  serverPath: MDXServerPath
+) {
+  template = template
+    .replaceAll('{{word}}', word)
+    .replaceAll('{{date}}', () => new Date().toLocaleDateString())
+
+  // Substitution of {{#for ...}}
+  template = template.replaceAll(/{{#for}}([\s\S]*?){{\/for}}/g, (match, content) => {
+    let forResult = ''
+    for (let i = 0; i < results.length; i++) {
+      let replacedContent = content
+      replacedContent = replacedContent
+        .replaceAll('{{result}}', results[i])
+        .replaceAll('{{path}}', serverPath.dictAllPaths[i])
+        .replaceAll('{{basename}}', basename(serverPath.dictAllPaths[i]))
+      forResult += replacedContent
+    }
+    return forResult
+  })
+  return template
 }
 
 function substitute(text: string, settings: Array<substituteRule>): string {
   let output = text
   for (const setting of settings) {
     const rule = new RegExp(setting.rule, 'g')
-    output = output.replaceAll(rule, setting.substitute)
+    output = output.replaceAll(rule, setting.substitute.replaceAll('\\n', '\n')) // newline substitute
   }
   return output
 }
 
-// function concat(word: string, names: Array<string>, texts: Array<string>): string {
-//   let result = `<h1>${word}</h1><hr><br>`
-//   for (let i = 0; i < names.length; i++) {
-//     result += `<h2>${names[i]}</h2> <br>` + texts[i] + '<br> <hr>'
-//   }
-//   return result
-// }
-
 // \*\*[0-9]\\\.\*\*
+// \*\*(M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3}))\.\*\*
