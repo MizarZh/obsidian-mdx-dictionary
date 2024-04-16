@@ -4,7 +4,7 @@ import type { MdxDictionarySettings } from '../settings'
 
 export const VIEW_TYPE_MDX_DICT = 'mdx-dict-view'
 
-import { lookup, lookupAll, lookupWebSeparated } from '../lookup/lookup'
+import { lookupWebSeparated } from '../lookup/lookup'
 
 // import iframeResizer from 'iframe-resizer/js/iframeResizer'
 import { iframeResizer, type IFrameComponent } from 'iframe-resizer'

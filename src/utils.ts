@@ -4,11 +4,11 @@ import { statSync } from 'fs'
 
 import { Notice, App, FileSystemAdapter, Vault, TFolder, TFile } from 'obsidian'
 
-import { SaveFileModal } from './ui/modal'
+import { SaveFileSuggestModal } from './ui/modal'
 
 import { VIEW_TYPE_MDX_DICT } from './ui/view'
 
-import { lookup, lookupAll } from './lookup/lookup'
+import { lookupAll } from './lookup/lookup'
 
 import type { MDXDictGroup, MDXServerPath } from './types'
 
@@ -54,7 +54,7 @@ export async function saveWordToFile(group: MDXDictGroup, path: MDXServerPath) {
     try {
       await vault.create(`${group.fileSavePath}/${this.settings.word}.md`, definition)
     } catch (e) {
-      new SaveFileModal(this.app, this.settings.word, async (result: string, vault: Vault) => {
+      new SaveFileSuggestModal(this.app, this.settings.word, async (result: string, vault: Vault) => {
         const fileSaveFolder = vault.getAbstractFileByPath(group.fileSavePath)
         if (fileSaveFolder instanceof TFolder) {
           for (const wordFile of fileSaveFolder.children) {

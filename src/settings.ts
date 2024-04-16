@@ -26,7 +26,7 @@ export const MDX_DICTIONARY_DEFAULT_SETTINGS: Partial<MdxDictionarySettings> = {
   group: [],
 }
 
-const saveTemplateDefault: SaveTemplate = {
+export const saveTemplateDefault: SaveTemplate = {
   markdown: '#{{word}}\n\n---\n{{#for}}\n## {{basename}}\n{{result}}\n\n---\n{{/for}}',
   iframe:
     '<h1>{{word}}</h1>\n<hr><br>\n{{#for}}\n <h2>{{basename}}</h2>\n{{result}}\n<hr><br>{{/for}}',
@@ -54,7 +54,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName('Refresh files')
       .setDesc(
-        'Refresh if something has changed in the file system (for example a new dictionary is added)'
+        'Update files paths if something has changed in the file system (for example a new dictionary has added)'
       )
       .addExtraButton((cb) => {
         cb.setIcon('rotate-ccw').onClick(async () => {
@@ -72,7 +72,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
       .setName('Group General Settings')
       .setDesc(`total group number: ${this.plugin.settings.group.length}`)
       .addButton((cb) => {
-        cb.setButtonText('Add new group')
+        cb.setButtonText('Add a new group')
           .setCta()
           .onClick(async () => {
             // remove then add
@@ -124,30 +124,30 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
 
         new Setting(this.containerEl)
           .setName('Group management')
-          .setDesc('search/save hotkeys and delete')
+          .setDesc('search/save hotkeys & group deletion')
           .addExtraButton((cb) => {
             cb.setIcon('any-key')
-              .setTooltip(`search hotkey for group ${elem.name}`)
+              .setTooltip(`search command hotkey for group ${elem.name}`)
               .onClick(() => {
                 // unoffical
                 // @ts-ignore
                 this.app.setting.openTabById('hotkeys')
                 // @ts-ignore
                 const tab = this.app.setting.activeTab
-                tab.searchInputEl.value = `MDX Dictionary: Search Word via Group <${elem.name}>`
+                tab.headerComponent.components[1].inputEl.value = `MDX Dictionary: Search Word using Group <${elem.name}>`
                 tab.updateHotkeyVisibility()
               })
           })
           .addExtraButton((cb) => {
             cb.setIcon('any-key')
-              .setTooltip(`save hotkey for group ${elem.name}`)
+              .setTooltip(`save command hotkey for group ${elem.name}`)
               .onClick(() => {
                 // unoffical
                 // @ts-ignore
                 this.app.setting.openTabById('hotkeys')
                 // @ts-ignore
                 const tab = this.app.setting.activeTab
-                tab.searchInputEl.value = `MDX Dictionary: Save Selected Word To File via Group <${elem.name}>`
+                tab.headerComponent.components[1].inputEl.value = `MDX Dictionary: Save Selected Word To File using Group <${elem.name}>`
                 tab.updateHotkeyVisibility()
               })
           })
@@ -191,7 +191,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
 
         new Setting(this.containerEl)
           .setName('Save template')
-          .setDesc('template for output text')
+          .setDesc('template for output')
           .addTextArea((cb) => {
             saveTemplateTextArea = cb
             cb.inputEl.addClass('save-template')
@@ -205,7 +205,6 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
           saveFormatOption.onChange(async (value: SaveFormat) => {
             elem.saveFormat = value
             saveTemplateTextArea.setValue(elem.saveTemplate[elem.saveFormat])
-            console.log(value)
             await this.plugin.saveSettings()
           })
         }
@@ -365,7 +364,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
     }
 
     new Setting(this.containerEl).addButton((cb) => {
-      cb.setButtonText('Add new rule')
+      cb.setButtonText('Add a new rule')
         .setCta()
         .onClick(async () => {
           group.rules.push({

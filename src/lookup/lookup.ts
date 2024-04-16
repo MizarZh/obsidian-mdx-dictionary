@@ -1,14 +1,11 @@
 import Mdict from 'js-mdict'
 import { basename, extname, join, dirname } from 'path'
-import { Notice } from 'obsidian'
-import { readdirSync, statSync, readFileSync } from 'fs'
 import { convert } from 'html-to-text'
 import { notice, checkPathValid } from '../utils'
 import TurndownService from 'turndown'
-import type { substituteRule, MDXServerPath } from '../types'
+import type { substituteRule, MDXServerPath, SaveFormat } from '../types'
 import { httpPath, folder2httpRoot, word2httpRoot } from '../config'
-import { resizeCode } from '../resize/resizeCode'
-import type { SaveFormat } from '../types'
+import { saveTemplateDefault } from '../settings'
 
 const turndownService = new TurndownService({
   headingStyle: 'atx',
@@ -35,6 +32,7 @@ export function lookupWebSingle(word: string, path: string, name: string, folder
     })
     return definition_HTML.documentElement.innerHTML
   } else {
+    notice(`No word found in ${basename(path)}`, true)
     return '<p>No such word!</p>'
   }
 }
@@ -57,6 +55,7 @@ export function lookupRawSingle(word: string, path: string) {
   if (definition !== null) {
     return definition
   } else {
+    notice(`No word found in ${basename(path)}`, true)
     return 'No such word!'
   }
 }
@@ -68,37 +67,6 @@ export function lookupRawAll(word: string, serverPath: MDXServerPath) {
     texts.push(lookupRawSingle(word, dictAllPaths[i]))
   }
   return texts
-}
-
-// {{word}} - word
-// {{date}}
-export function lookupAll(
-  word: string,
-  serverPath: MDXServerPath,
-  saveFormat: SaveFormat,
-  template: string,
-  substituteSettings: Array<substituteRule>
-) {
-  if (saveFormat === 'markdown') {
-    let results = lookupRawAll(word, serverPath)
-    results = results.map((val) => turndownService.turndown(val))
-    console.log(results.map((val) => turndownService.turndown(val)))
-    const preResult = templateReplaceAll(template, word, results, serverPath)
-    return substitute(preResult, substituteSettings)
-  } else if (saveFormat === 'text') {
-    let results = lookupRawAll(word, serverPath)
-    results = results.map((val) => convert(val))
-    const preResult = templateReplaceAll(template, word, results, serverPath)
-    return substitute(preResult, substituteSettings)
-  } else if (saveFormat === 'iframe') {
-    const preResult = lookupWebSeparated(word, serverPath, template, 'word-definition-embed')
-    return substitute(preResult, substituteSettings)
-  } else if (saveFormat === 'raw') {
-    const results = lookupRawAll(word, serverPath)
-    const preResult = templateReplaceAll(template, word, results, serverPath)
-    return substitute(preResult, substituteSettings)
-  }
-  return ''
 }
 
 export function lookupWebSeparated(
@@ -118,6 +86,37 @@ export function lookupWebSeparated(
   if (iframeResize === true)
     result = '<script type="text/javascript">${resizeCode}</script>' + result
   return result
+}
+
+export function lookupAll(
+  word: string,
+  serverPath: MDXServerPath,
+  saveFormat: SaveFormat,
+  template: string,
+  substituteSettings: Array<substituteRule>
+) {
+  if (template.trim() === '') {
+    template = saveTemplateDefault[saveFormat]
+  }
+  if (saveFormat === 'markdown') {
+    let results = lookupRawAll(word, serverPath)
+    results = results.map((val) => turndownService.turndown(val))
+    const preResult = templateReplaceAll(template, word, results, serverPath)
+    return substitute(preResult, substituteSettings)
+  } else if (saveFormat === 'text') {
+    let results = lookupRawAll(word, serverPath)
+    results = results.map((val) => convert(val))
+    const preResult = templateReplaceAll(template, word, results, serverPath)
+    return substitute(preResult, substituteSettings)
+  } else if (saveFormat === 'iframe') {
+    const preResult = lookupWebSeparated(word, serverPath, template, 'word-definition-embed')
+    return substitute(preResult, substituteSettings)
+  } else if (saveFormat === 'raw') {
+    const results = lookupRawAll(word, serverPath)
+    const preResult = templateReplaceAll(template, word, results, serverPath)
+    return substitute(preResult, substituteSettings)
+  }
+  return ''
 }
 
 function templateReplaceAll(
@@ -144,19 +143,6 @@ function templateReplaceAll(
     return forResult
   })
   return template
-}
-
-export function template_view(word: string, name: string, paths: string[]) {
-  let result = ` </script><h1>${word}</h1><br><hr><br>`
-
-  // let result = `<script src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.9/iframeResizer.min.js"></script>
-  // <h1>${word}</h1><br><hr><br>`
-  for (const path of paths) {
-    result += `<h2>${basename(
-      path
-    )}</h2> <br> <iframe class="word-definition-results" seamless src="${httpPath}/${word2httpRoot}?word=${word}&name=${name}&dictPath=${path}"}></iframe> <br> <hr>`
-  }
-  return result
 }
 
 function substitute(text: string, settings: Array<substituteRule>): string {

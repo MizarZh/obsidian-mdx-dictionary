@@ -9,7 +9,7 @@ import { folder2httpRoot, word2httpRoot } from '../config'
 import type { MDXServerPathGroup, MDXServerPath } from '../types'
 import { resizeCode } from '../resize/resizeCode'
 import { notice, checkPathValid } from '../utils'
-import { basename, extname, join, dirname } from 'path'
+import path, { basename, extname, join, dirname } from 'path'
 import { readdirSync, statSync, readFileSync } from 'fs'
 
 export default class MDXServer {
@@ -69,7 +69,8 @@ export default class MDXServer {
           res.send(`No such word in this dictionary!`)
         }
       } else {
-        res.send('Wrong word request')
+        notice('MDX Server query error', true)
+        res.send('MDX Server query error')
       }
     })
 

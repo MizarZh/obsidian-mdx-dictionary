@@ -52,7 +52,7 @@ export default class MdxDictionary extends Plugin {
     this.settings.group.forEach((elem) => {
       this.addCommand({
         id: `search-word-group-${elem.name}`,
-        name: `Search Word via Group <${elem.name}>`,
+        name: `Search Word using Group <${elem.name}>`,
         editorCallback: async (editor: Editor) => {
           const selection = editor.getSelection()
           if (selection !== '') {
@@ -67,7 +67,7 @@ export default class MdxDictionary extends Plugin {
 
       this.addCommand({
         id: `save-selected-word-to-file-group-${elem.name}`,
-        name: `Save Selected Word To File via group <${elem.name}>`,
+        name: `Save Selected Word To File using Group <${elem.name}>`,
         editorCallback: async (editor: Editor) => {
           const selection = editor.getSelection()
           if (selection !== '') {

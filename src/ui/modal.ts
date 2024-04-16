@@ -69,7 +69,7 @@ interface SaveFileOptions {
   operation: string
 }
 
-export class SaveFileModal extends SuggestModal<SaveFileOptions> {
+export class SaveFileSuggestModal extends SuggestModal<SaveFileOptions> {
   onSubmit: (result: string, vault: Vault) => void
 
   constructor(app: App, filename: string, onSubmit: (result: string, vault: Vault) => void) {
