@@ -62,7 +62,7 @@ export default class MDXServer {
         let HTML = lookupWebSingle(reqJson.word, reqJson.dictPath, reqJson.name, folderIdx)
         if (HTML !== null) {
           HTML += `<script type="text/javascript">${resizeCode}</script>`
-          // HTML.body.innerHTML += `<script src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.9/iframeResizer.min.js" defer=""></script>`
+          // HTML += `<script src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.9/iframeResizer.min.js" defer=""></script>`
           // console.log(HTML)
           res.send(`<!DOCTYPE html><html>${HTML}</html>`)
         } else {

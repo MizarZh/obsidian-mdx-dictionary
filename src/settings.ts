@@ -108,6 +108,7 @@ export class MdxDictionarySettingTab extends PluginSettingTab {
           console.log(ev)
           new NameChangeModal(this.app, elem.name, async (name: string) => {
             // if already exist the name
+            console.log(name)
             this.plugin.removeAllCommand()
             if (arr.some((val) => val.name === name)) {
               new Notice('Name already exist')

@@ -35,6 +35,7 @@ export default class MdxDictionary extends Plugin {
   }
 
   onunload() {
+    this.removeAllCommand()
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_MDX_DICT)
     this.server.end()
   }
@@ -55,9 +56,9 @@ export default class MdxDictionary extends Plugin {
         name: `Search Word using Group <${elem.name}>`,
         editorCallback: async (editor: Editor) => {
           const selection = editor.getSelection()
+          this.settings.searchGroup = elem
           if (selection !== '') {
             this.settings.word = selection
-            this.settings.searchGroup = elem
             await activateView.call(this, elem)
           } else {
             new SearchWordModal(this.app, this.settings, elem).open()

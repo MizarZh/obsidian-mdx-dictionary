@@ -6,6 +6,7 @@ import TurndownService from 'turndown'
 import type { substituteRule, MDXServerPath, SaveFormat } from '../types'
 import { httpPath, folder2httpRoot, word2httpRoot } from '../config'
 import { saveTemplateDefault } from '../settings'
+import { resizeCode } from '../resize/resizeCode'
 
 const turndownService = new TurndownService({
   headingStyle: 'atx',
@@ -73,8 +74,7 @@ export function lookupWebSeparated(
   word: string,
   serverPath: MDXServerPath,
   template: string,
-  className: string,
-  iframeResize = false
+  className: string
 ) {
   const results = []
   for (const path of serverPath.dictAllPaths) {
@@ -82,9 +82,7 @@ export function lookupWebSeparated(
       `<iframe class="${className}" seamless src="${httpPath}/${word2httpRoot}?word=${word}&name=${serverPath.name}&dictPath=${path}"></iframe>`
     )
   }
-  let result = templateReplaceAll(template, word, results, serverPath)
-  if (iframeResize === true)
-    result = '<script type="text/javascript">${resizeCode}</script>' + result
+  const result = templateReplaceAll(template, word, results, serverPath)
   return result
 }
 
